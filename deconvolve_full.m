@@ -1,4 +1,4 @@
-function deconvolve_full(files,save_images)
+function [] = deconvolve_full(files,save_images)
     %% Deconvolve IHC images to separate H and DAB channels
     % @author: pdzialecka
     
