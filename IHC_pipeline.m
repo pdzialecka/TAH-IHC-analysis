@@ -18,7 +18,12 @@ if deconvolve
     deconvolve_full(files);
 end
 
+%% Pre-select ROIs
+
+
 %% Analyse moc23 data
+load_rois = 1;
+
 if analyse_moc
     image_type = 'moc23';
     files = dir(fullfile(processed_folder,strcat('*',image_type,'*deconv.tif')));
