@@ -12,9 +12,6 @@ function [rois_x,rois_y] = select_roi(file_,magnification)
     
     %% ROIs
     [roi_names,roi_fnames,roi_no] = get_roi_list();
-%     roi_names = {'Right Hipp','Left Hipp','Right Cortex','Left Cortex','Control Area'};
-%     roi_no = length(roi_names);
-%     roi_fnames = {'hipp_R','hipp_L','cortex_R','cortex_L','control'};
     roi_order_no = 1:roi_no;
     
     rois_x = {};
@@ -30,15 +27,6 @@ function [rois_x,rois_y] = select_roi(file_,magnification)
         %% ROI folder
         data_folder = fileparts(folder);
         roi_folder = find_roi_folder(data_folder);
-%         roi_folder = fullfile(fileparts(fileparts(folder)),'ROIs');
-% 
-%         % create subfolder with mouse name
-%         mouse_name = file(1:9);
-%         roi_folder = fullfile(roi_folder,mouse_name);
-% 
-%         if ~exist(roi_folder)
-%             mkdir(roi_folder);
-%         end
         
         %%
         fname = strcat(file(1:end-11),'_',num2str(roi_order_no(roi_idx)),'_roi_',roi_fnames{roi_idx},'.mat');
@@ -50,15 +38,6 @@ function [rois_x,rois_y] = select_roi(file_,magnification)
             %% Load deconvolved images
             file_path = fullfile(folder,file);
             [h_image,dab_image] = load_deconvolved_images(file_path);
-
-%             image = read_file(fullfile(folder,file));
-%             h_image = image(:,:,1);
-%             dab_image = image(:,:,2);
-%         %     image_res = image(:,:,3);
-% 
-%             %% Rotate images
-%             h_image = imrotate(h_image,-90);
-%             dab_image = imrotate(dab_image,-90);
 
             %%
             roi_size = round(size(dab_image)/magnification);
@@ -126,7 +105,6 @@ function [rois_x,rois_y] = select_roi(file_,magnification)
 
                 %% Save accepted ROI coordinates
                 if roi_accepted
-            %                     fname = strcat(file(1:end-11),'_roi_',roi_fnames{roi_idx});
 
                     % figures
                     fname1 = strcat(fname,'_1_H_full.tif');
@@ -149,8 +127,6 @@ function [rois_x,rois_y] = select_roi(file_,magnification)
                     roi.x = roi_x;
                     roi.y = roi_y;
 
-%                     fname = strcat(file(1:end-11),'_roi_',roi_fnames{roi_idx},'.mat');
-%                     save(fullfile(roi_folder,fname),'roi');
                     save(roi_fname,'roi');
                     fprintf('ROI %s saved\n',fname);
                     
