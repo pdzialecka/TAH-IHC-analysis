@@ -11,9 +11,10 @@ function [rois_x,rois_y] = select_roi(file_,magnification)
     [h_colormap,dab_colormap] = create_hdab_colormaps();
     
     %% ROIs
-    roi_names = {'Right Hipp','Left Hipp','Right Cortex','Left Cortex','Control Area'};
-    roi_no = length(roi_names);
-    roi_fnames = {'hipp_R','hipp_L','cortex_R','cortex_L','control'};
+    [roi_names,roi_fnames,roi_no] = get_roi_list();
+%     roi_names = {'Right Hipp','Left Hipp','Right Cortex','Left Cortex','Control Area'};
+%     roi_no = length(roi_names);
+%     roi_fnames = {'hipp_R','hipp_L','cortex_R','cortex_L','control'};
     roi_order_no = 1:roi_no;
     
     rois_x = {};
@@ -27,15 +28,17 @@ function [rois_x,rois_y] = select_roi(file_,magnification)
     for roi_idx = 1:roi_no
 
         %% ROI folder
-        roi_folder = fullfile(fileparts(fileparts(folder)),'ROIs');
-
-        % create subfolder with mouse name
-        mouse_name = file(1:9);
-        roi_folder = fullfile(roi_folder,mouse_name);
-
-        if ~exist(roi_folder)
-            mkdir(roi_folder);
-        end
+        data_folder = fileparts(folder);
+        roi_folder = find_roi_folder(data_folder);
+%         roi_folder = fullfile(fileparts(fileparts(folder)),'ROIs');
+% 
+%         % create subfolder with mouse name
+%         mouse_name = file(1:9);
+%         roi_folder = fullfile(roi_folder,mouse_name);
+% 
+%         if ~exist(roi_folder)
+%             mkdir(roi_folder);
+%         end
         
         %%
         fname = strcat(file(1:end-11),'_',num2str(roi_order_no(roi_idx)),'_roi_',roi_fnames{roi_idx},'.mat');
