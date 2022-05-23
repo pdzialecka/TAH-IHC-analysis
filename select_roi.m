@@ -8,11 +8,7 @@ function [rois_x,rois_y] = select_roi(file_,magnification)
     
     %% H DAB colormaps
     % for easier visualisation
-    dab_col = (1-[0.26814753,0.57031375,0.77642715]);
-    h_col = (1-[0.6500286,0.704031,0.2860126]);
-
-    dab_colormap = [(linspace(dab_col(1),1,256)'),(linspace(dab_col(2),1,256)'),(linspace(dab_col(3),1,256)')];
-    h_colormap = [(linspace(h_col(1),1,256)'),(linspace(h_col(2),1,256)'),(linspace(h_col(3),1,256)')];
+    [h_colormap,dab_colormap] = create_hdab_colormaps();
     
     %% ROIs
     roi_names = {'Right Hipp','Left Hipp','Right Cortex','Left Cortex','Control Area'};
@@ -49,14 +45,17 @@ function [rois_x,rois_y] = select_roi(file_,magnification)
         if ~exist(roi_fname,'file')
 
             %% Load deconvolved images
-            image = read_file(fullfile(folder,file));
-            h_image = image(:,:,1);
-            dab_image = image(:,:,2);
-        %     image_res = image(:,:,3);
+            file_path = fullfile(folder,file);
+            [h_image,dab_image] = load_deconvolved_images(file_path);
 
-            %% Rotate images
-            h_image = imrotate(h_image,-90);
-            dab_image = imrotate(dab_image,-90);
+%             image = read_file(fullfile(folder,file));
+%             h_image = image(:,:,1);
+%             dab_image = image(:,:,2);
+%         %     image_res = image(:,:,3);
+% 
+%             %% Rotate images
+%             h_image = imrotate(h_image,-90);
+%             dab_image = imrotate(dab_image,-90);
 
             %%
             roi_size = round(size(dab_image)/magnification);

@@ -13,11 +13,13 @@ function [] = analyse_data(files,load_rois)
     
     %% H DAB colormaps
     % for easier visualisation
-    dab_col = (1-[0.26814753,0.57031375,0.77642715]);
-    h_col = (1-[0.6500286,0.704031,0.2860126]);
+    [h_colormap,dab_colormap] = create_hdab_colormaps();
 
-    dab_colormap = [(linspace(dab_col(1),1,256)'),(linspace(dab_col(2),1,256)'),(linspace(dab_col(3),1,256)')];
-    h_colormap = [(linspace(h_col(1),1,256)'),(linspace(h_col(2),1,256)'),(linspace(h_col(3),1,256)')];
+%     dab_col = (1-[0.26814753,0.57031375,0.77642715]);
+%     h_col = (1-[0.6500286,0.704031,0.2860126]);
+% 
+%     dab_colormap = [(linspace(dab_col(1),1,256)'),(linspace(dab_col(2),1,256)'),(linspace(dab_col(3),1,256)')];
+%     h_colormap = [(linspace(h_col(1),1,256)'),(linspace(h_col(2),1,256)'),(linspace(h_col(3),1,256)')];
     
     %% ROIs
 %     roi_names = {'Right Hipp','Left Hipp','Right Cortex','Left Cortex','Control Area'};
@@ -60,14 +62,17 @@ function [] = analyse_data(files,load_rois)
 %     end
     
     %% Load deconvolved images
-    image = read_file(fullfile(folder,file));
-    h_image = image(:,:,1);
-    dab_image = image(:,:,2);
-%     image_res = image(:,:,3);
-
-    %% Rotate images
-    h_image = imrotate(h_image,-90);
-    dab_image = imrotate(dab_image,-90);
+    file_path = fullfile(folder,file);
+    [h_image,dab_image] = load_deconvolved_images(file_path);
+    
+%     image = read_file(fullfile(folder,file));
+%     h_image = image(:,:,1);
+%     dab_image = image(:,:,2);
+% %     image_res = image(:,:,3);
+% 
+%     %% Rotate images
+%     h_image = imrotate(h_image,-90);
+%     dab_image = imrotate(dab_image,-90);
     
     %% Find ROIs
     roi_not_found = 0;
@@ -76,7 +81,7 @@ function [] = analyse_data(files,load_rois)
     for roi_idx = 1:roi_no
 % %         fname = strcat(file(1:end-11),'_roi_',roi_fnames{roi_idx},'.mat');
         fname = strcat(file(1:end-11),'_',num2str(roi_order_no(roi_idx)),'_roi_',roi_fnames{roi_idx},'.mat');
-%         
+%       
         %% ROI folder
         roi_folder = fullfile(fileparts(fileparts(folder)),'ROIs');
 
