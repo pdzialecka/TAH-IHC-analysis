@@ -10,6 +10,7 @@ processed_folder = fullfile(data_folder,'Processed');
 
 %% Analysis steps
 deconvolve = 1;
+select_rois = 1;
 analyse_moc = 1;
 
 %% Deconvolve all files inside a folder
@@ -18,8 +19,16 @@ if deconvolve
     deconvolve_full(files);
 end
 
-%% Pre-select ROIs
+%% Pre-select all ROIs
+if select_rois
+    magnification = 10;
+    files = dir(fullfile(processed_folder,strcat('*deconv.tif')));
 
+    for idx = 1:length(files)
+        file_ = files(idx);
+        select_roi(file_,magnification)
+    end
+end
 
 %% Analyse moc23 data
 load_rois = 1;

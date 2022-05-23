@@ -1,4 +1,4 @@
-function [] = analyse_data(files,load_rois,magnification)
+function [] = analyse_data(files,load_rois)
     %% Analyse IHC data across selected ROIs
     % @author: pdzialecka
     
@@ -7,9 +7,9 @@ function [] = analyse_data(files,load_rois,magnification)
         load_rois = 0;
     end
     
-    if ~exist('magnification','var')
-        magnification = 10; % 10 or 20x
-    end
+%     if ~exist('magnification','var')
+%         magnification = 10; % 10 or 20x
+%     end
     
     %% H DAB colormaps
     % for easier visualisation
@@ -20,13 +20,13 @@ function [] = analyse_data(files,load_rois,magnification)
     h_colormap = [(linspace(h_col(1),1,256)'),(linspace(h_col(2),1,256)'),(linspace(h_col(3),1,256)')];
     
     %% ROIs
-    roi_names = {'Right Hipp','Left Hipp','Right Cortex','Left Cortex','Control Area'};
-    roi_no = length(roi_names);
-    roi_fnames = {'hipp_R','hipp_L','cortex_R','cortex_L','control'};
-    roi_order_no = 1:roi_no;
-    
-    rois_x = {};
-    rois_y = {};
+%     roi_names = {'Right Hipp','Left Hipp','Right Cortex','Left Cortex','Control Area'};
+%     roi_no = length(roi_names);
+%     roi_fnames = {'hipp_R','hipp_L','cortex_R','cortex_L','control'};
+%     roi_order_no = 1:roi_no;
+%     
+%     rois_x = {};
+%     rois_y = {};
     
     %%
     idx = 1;
@@ -71,12 +71,12 @@ function [] = analyse_data(files,load_rois,magnification)
     
     %% Find ROIs
     roi_not_found = 0;
-    roi_size = round(size(dab_image)/magnification);
+%     roi_size = round(size(dab_image)/magnification);
 
     for roi_idx = 1:roi_no
-%         fname = strcat(file(1:end-11),'_roi_',roi_fnames{roi_idx},'.mat');
+% %         fname = strcat(file(1:end-11),'_roi_',roi_fnames{roi_idx},'.mat');
         fname = strcat(file(1:end-11),'_',num2str(roi_order_no(roi_idx)),'_roi_',roi_fnames{roi_idx},'.mat');
-        
+%         
         %% ROI folder
         roi_folder = fullfile(fileparts(fileparts(folder)),'ROIs');
 
@@ -100,105 +100,113 @@ function [] = analyse_data(files,load_rois,magnification)
                 fprintf('Successfully loaded %s ROI\n',fname);
 
             else
-                roi_not_found = 1;
+                roi_not_found = 1; % flag for at least one missing ROI
                 fprintf('ROI file %s not found; ROI selection required\n',fname)
             end
         end
 
         %% Select ROIs
-        if ~load_rois || roi_not_found
-            roi_accepted = 0;
+%         if ~load_rois || roi_not_found
+%             [rois_x,rois_y] = select_roi(files(idx));
+%             
+%             roi_accepted = 0;
+% 
+%             while ~roi_accepted
+%                 %% Select ROI on H image
+%                 fig1 = figure('units','normalized','outerposition',[0 0 1 1]);
+%                 imshow(h_image),colormap(h_colormap)
+% 
+%                 title(sprintf('Select %s ROI',roi_names{roi_idx})) 
+% 
+%                 % roi = drawrectangle();
+%                 % 
+%                 % roi.Position = round(roi.Position);
+%                 % roi_x = roi.Position(2):roi.Position(2)+roi.Position(4);
+%                 % roi_y = roi.Position(1):roi.Position(1)+roi.Position(3);
+% 
+%                 roi_point = drawpoint();
+% 
+%                 %% Diplay ROI on DAB image
+%                 roi_point.Position = round(roi_point.Position);
+%                 roi_x_1 = round(roi_point.Position(2)-roi_size(1)/2);
+%                 roi_y_1 = round(roi_point.Position(1)-roi_size(2)/2);
+% 
+%                 roi_x = roi_x_1:roi_x_1+roi_size(1);
+%                 roi_y = roi_y_1:roi_y_1+roi_size(2);
+% 
+%                 roi_rect = drawrectangle('Position',[roi_y_1,roi_x_1,roi_size(2),roi_size(1)]);
+%                 title(sprintf('%s ROI',roi_names{roi_idx}));
+% 
+%                 fig2 = figure('units','normalized','outerposition',[0 0 1 1]);
+%                 imshow(dab_image),colormap(dab_colormap)
+%                 roi_rect = drawrectangle('Position',[roi_y_1,roi_x_1,roi_size(2),roi_size(1)]);
+%                 title(sprintf('%s ROI',roi_names{roi_idx}));
+% 
+% 
+%                 %% Display ROI selected
+%                 h_image_roi = h_image(roi_x,roi_y);
+%                 dab_image_roi = dab_image(roi_x,roi_y);
+% 
+%                 fig3 = figure('units','normalized','outerposition',[0 0 1 1]);
+%                 ax(1) = subplot(121); imshow(h_image_roi)
+%                 ax(2) = subplot(122); imshow(dab_image_roi)
+%                 colormap(ax(1),h_colormap)
+%                 colormap(ax(2),dab_colormap)
+% 
+%                 %% Accept or reject ROI
+%                 answer = questdlg('Do you want to accept this ROI?',...
+%                     'Accept ROI?','Yes','No','Yes');
+% 
+%                 % Handle response
+%                 switch answer
+%                     case 'Yes'
+%                         roi_accepted = 1;
+%                         rois_x{roi_idx} = roi_x;
+%                         rois_y{roi_idx} = roi_y;
+% 
+%                     case 'No'
+%                         roi_accepted = 0;
+%                         close(fig1);
+%                         close(fig2);
+%                         close(fig3);
+%                 end
+% 
+%                 %% Save accepted ROI coordinates
+%                 if roi_accepted
+% %                     fname = strcat(file(1:end-11),'_roi_',roi_fnames{roi_idx});
+% 
+%                     % figures
+%                     fname1 = strcat(fname,'_1_H_full.tif');
+%                     saveas(fig1,fullfile(roi_folder,fname1));
+% 
+%                     fname2 = strcat(fname,'_2_DAB_full.tif');
+%                     saveas(fig2,fullfile(roi_folder,fname2));
+% 
+%                     fname3 = strcat(fname,'_3_H_DAB_',num2str(magnification),'x.tif');
+%                     saveas(fig3,fullfile(roi_folder,fname3));
+%                     
+%                     close(fig1);
+%                     close(fig2);
+%                     close(fig3);
+%                     
+%                     
+%                     % roi details
+%                     roi.name = roi_names{roi_idx};
+%                     roi.fname = roi_fnames{roi_idx};
+%                     roi.x = roi_x;
+%                     roi.y = roi_y;
+% 
+%                     fname = strcat(file(1:end-11),'_roi_',roi_fnames{roi_idx},'.mat');
+%                     save(fullfile(roi_folder,fname),'roi');
+%                 end
+%             end
 
-            while ~roi_accepted
-                %% Select ROI on H image
-                fig1 = figure('units','normalized','outerposition',[0 0 1 1]);
-                imshow(h_image),colormap(h_colormap)
 
-                title(sprintf('Select %s ROI',roi_names{roi_idx})) 
-
-                % roi = drawrectangle();
-                % 
-                % roi.Position = round(roi.Position);
-                % roi_x = roi.Position(2):roi.Position(2)+roi.Position(4);
-                % roi_y = roi.Position(1):roi.Position(1)+roi.Position(3);
-
-                roi_point = drawpoint();
-
-                %% Diplay ROI on DAB image
-                roi_point.Position = round(roi_point.Position);
-                roi_x_1 = round(roi_point.Position(2)-roi_size(1)/2);
-                roi_y_1 = round(roi_point.Position(1)-roi_size(2)/2);
-
-                roi_x = roi_x_1:roi_x_1+roi_size(1);
-                roi_y = roi_y_1:roi_y_1+roi_size(2);
-
-                roi_rect = drawrectangle('Position',[roi_y_1,roi_x_1,roi_size(2),roi_size(1)]);
-                title(sprintf('%s ROI',roi_names{roi_idx}));
-
-                fig2 = figure('units','normalized','outerposition',[0 0 1 1]);
-                imshow(dab_image),colormap(dab_colormap)
-                roi_rect = drawrectangle('Position',[roi_y_1,roi_x_1,roi_size(2),roi_size(1)]);
-                title(sprintf('%s ROI',roi_names{roi_idx}));
-
-
-                %% Display ROI selected
-                h_image_roi = h_image(roi_x,roi_y);
-                dab_image_roi = dab_image(roi_x,roi_y);
-
-                fig3 = figure('units','normalized','outerposition',[0 0 1 1]);
-                ax(1) = subplot(121); imshow(h_image_roi)
-                ax(2) = subplot(122); imshow(dab_image_roi)
-                colormap(ax(1),h_colormap)
-                colormap(ax(2),dab_colormap)
-
-                %% Accept or reject ROI
-                answer = questdlg('Do you want to accept this ROI?',...
-                    'Accept ROI?','Yes','No','Yes');
-
-                % Handle response
-                switch answer
-                    case 'Yes'
-                        roi_accepted = 1;
-                        rois_x{roi_idx} = roi_x;
-                        rois_y{roi_idx} = roi_y;
-
-                    case 'No'
-                        roi_accepted = 0;
-                        close(fig1);
-                        close(fig2);
-                        close(fig3);
-                end
-
-                %% Save accepted ROI coordinates
-                if roi_accepted
-%                     fname = strcat(file(1:end-11),'_roi_',roi_fnames{roi_idx});
-
-                    % figures
-                    fname1 = strcat(fname,'_1_H_full.tif');
-                    saveas(fig1,fullfile(roi_folder,fname1));
-
-                    fname2 = strcat(fname,'_2_DAB_full.tif');
-                    saveas(fig2,fullfile(roi_folder,fname2));
-
-                    fname3 = strcat(fname,'_3_H_DAB_',num2str(magnification),'x.tif');
-                    saveas(fig3,fullfile(roi_folder,fname3));
-                    
-                    close(fig1);
-                    close(fig2);
-                    close(fig3);
-                    
-                    
-                    % roi details
-                    roi.name = roi_names{roi_idx};
-                    roi.fname = roi_fnames{roi_idx};
-                    roi.x = roi_x;
-                    roi.y = roi_y;
-
-                    fname = strcat(file(1:end-11),'_roi_',roi_fnames{roi_idx},'.mat');
-                    save(fullfile(roi_folder,fname),'roi');
-                end
-            end
-        end
+    end
+    
+    %% Else select ROIs
+    if ~load_rois || roi_not_found
+        [rois_x,rois_y] = select_roi(files(idx));
     end
     
     %% Analysis per ROI
