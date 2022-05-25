@@ -122,13 +122,13 @@ function [] = summarise_results(base_folder,cohort_case,image_type)
     %     figure,boxplot([sham_density(roi_idx,:);gamma_density(roi_idx,:)]',...
     %         'Labels',conds(1:2));
 
-        results_to_plot = nan(max_group_n,4);
-        results_to_plot(1:sham_n,1) = sham_density(roi_idx,:);
-        results_to_plot(1:gamma_n,2) = gamma_density(roi_idx,:);
-        results_to_plot(1:theta_n,3) = theta_density(roi_idx,:);
-        results_to_plot(1:ltd_n,4) = ltd_density(roi_idx,:);
+        roi_results = nan(max_group_n,4);
+        roi_results(1:sham_n,1) = sham_density(roi_idx,:);
+        roi_results(1:gamma_n,2) = gamma_density(roi_idx,:);
+        roi_results(1:theta_n,3) = theta_density(roi_idx,:);
+        roi_results(1:ltd_n,4) = ltd_density(roi_idx,:);
 
-        figure,boxplot(results_to_plot,'Labels',conds);
+        figure,boxplot(roi_results,'Labels',conds);
 
         title(roi_names{roi_idx});
         ylabel('Area covered (%)');
@@ -136,6 +136,10 @@ function [] = summarise_results(base_folder,cohort_case,image_type)
         fig_name = sprintf('%s_density_roi_%s.tif',image_type,roi_fnames{roi_idx});
         saveas(gcf,fullfile(cohort_results_folder,fig_name));
         close(gcf);
+        
+        file_name = sprintf('%s_density_roi_%s_data.mat',image_type,roi_fnames{roi_idx});
+        save(fullfile(cohort_results_folder,file_name),'roi_results');
+        
     end
     
 end
