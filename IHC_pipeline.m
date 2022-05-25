@@ -21,7 +21,8 @@ data_folder = fullfile(main_folder,cohort_folder,'IHC\Images');
 deconvolve = 1;
 select_rois = 1;
 analyse = 1;
-analyse_all = 1;
+analyse_all = 0;
+image_type = 'moc23'; % specific analysis
 
 %% Deconvolve all files inside a folder
 if deconvolve
@@ -34,9 +35,14 @@ end
 %% Pre-select all ROIs
 if select_rois
     magnification = 20;
-    files = dir(fullfile(data_folder,'**',strcat('*deconv.tif')));
     
-    files = files(3); % test file
+    if analyse_all
+        files = dir(fullfile(data_folder,'**',strcat('*deconv.tif')));
+    else
+        files = dir(fullfile(data_folder,'**',strcat('*',image_type,'*deconv.tif')));
+    end
+    
+%     files = files(3); % test file
 
     for idx = 1:length(files)
         file_ = files(idx);
@@ -47,16 +53,14 @@ end
 %% Analyse all data or that from one antibody only
 if analyse
     load_rois = 1;
-    image_type = 'moc23'; % specific analysis
 
     if analyse_all
         files = dir(fullfile(data_folder,'**',strcat('*deconv.tif')));
-
     else
         files = dir(fullfile(data_folder,'**',strcat('*',image_type,'*deconv.tif')));
     end
     
-    files = files(3); % test file
+    files = files([1]); % test file
     analyse_data(files,load_rois);
     
 end

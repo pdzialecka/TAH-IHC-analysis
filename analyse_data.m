@@ -5,6 +5,8 @@ function [] = analyse_data(files,load_rois)
     % Variables to explore:
     % * pixel_thresh_factor (default: 1)
     % * min_con_pixels (default: 25 at 20x, 100 at 10x)
+    % * k3 (spatial filter variable) - currently no difference after filter?
+    % * magnification (may affect other parameters)
     
     %% Default input options
     if ~exist('load_rois','var')
@@ -32,15 +34,15 @@ function [] = analyse_data(files,load_rois)
 
         elseif contains(file,'cfos')
             image_type = 'cfos';
-%             pixel_thresh = 150;
+            pixel_thresh = 0.2; % decrease to detect only v dark cells
 
         elseif contains(file,'GFAP')
             image_type = 'GFAP';
-%             pixel_thresh = 150;
+            pixel_thresh = 0.5;
 
         elseif contains(file,'Iba1')
             image_type = 'Iba1';
-%             pixel_thresh = 150;
+            pixel_thresh = 0.35;
 
         end
     
