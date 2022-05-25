@@ -1,5 +1,9 @@
 function [rois_x,rois_y] = select_roi(file_,magnification)
-    %% 
+    %% Select and save all required ROIs for a given image
+    % @author: pdzialecka
+    
+    % The functions checks if a given ROI already exists for this image.
+    % If it does, it skipps the condition to not override any existing ROIs
 
     %% Default input options
     if ~exist('magnification','var')

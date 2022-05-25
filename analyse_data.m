@@ -10,7 +10,7 @@ function [] = analyse_data(files,load_rois)
     
     %% Default input options
     if ~exist('load_rois','var')
-        load_rois = 0;
+        load_rois = 1;
     end
         
     %% H DAB colormaps
@@ -116,13 +116,16 @@ function [] = analyse_data(files,load_rois)
 
                 % gaussian and box filters comparable
                 % box blur applied many times = approximation of Gaussian blur
+                % gaussian filter requires sigma estimation and potentially
+                % larger filter size
 
-        %         box_kernel = ones(k3,k3)*1/(k3*k3);
-        %         h_image_f = imfilter(h_image_,box_kernel,'replicate');
-        %         dab_image_f = imfilter(dab_image_,box_kernel,'replicate');
+                box_kernel = ones(k3,k3)*1/(k3*k3);
+                h_image_f = imfilter(h_image_,box_kernel,'replicate');
+                dab_image_f = imfilter(dab_image_,box_kernel,'replicate');
 
-                h_image_f = imgaussfilt(h_image_,'FilterSize',k3,'Padding','replicate');
-                dab_image_f = imgaussfilt(dab_image_,'FilterSize',k3,'Padding','replicate');
+%                 sigma = 10;
+%                 h_image_f = imgaussfilt(h_image_,sigma,'FilterSize',k3,'Padding','replicate');
+%                 dab_image_f = imgaussfilt(dab_image_,sigma,'FilterSize',k3,'Padding','replicate');
 
             %     dab_image_f = imsharpen(image_dab_,'Radius',9,'Amount',1);
             
@@ -130,10 +133,10 @@ function [] = analyse_data(files,load_rois)
                 % from Nir's scripts: contrast enhancing + adaptive filtering
                 % doesn't improve moc23 images
 %                 n_tiles = 8;
-%                 dab_image_f = adapthisteq(dab_image_, 'NumTiles',[n_tiles n_tiles],'ClipLimit',0.001);   % Default: NumTiles=[8 8], ClipLimit=0.01
+%                 dab_image_ = adapthisteq(dab_image_, 'NumTiles',[n_tiles n_tiles],'ClipLimit',0.001);   % Default: NumTiles=[8 8], ClipLimit=0.01
 % 
-%                 flt_loc_pixs_size = 5;
-%                 [dab_image_f, noise] = wiener2(dab_image_f, [flt_loc_pixs_size flt_loc_pixs_size]);
+%                 flt_loc_pixs_size = k3; % 5
+%                 [dab_image_f, noise] = wiener2(dab_image_, [flt_loc_pixs_size flt_loc_pixs_size]);
 %                 disp([' estimated noise level before filtering: ', num2str(noise)]);
 
                
@@ -229,6 +232,7 @@ function [] = analyse_data(files,load_rois)
             fprintf('Area covered for %s ROI = %1.1f %% \n', fname, density)
             
             %% Save results
+            results.fname = fname;
             results.thresh_pixel = pixel_thresh;
             results.density = density;
             results.positive_pixels = positive_pixels;

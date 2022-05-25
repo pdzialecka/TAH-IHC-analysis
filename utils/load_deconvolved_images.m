@@ -1,4 +1,4 @@
-function [h_image,dab_image,res_image] = load0_deconvolved_images(file_path)
+function [h_image,dab_image,res_image] = load_deconvolved_images(file_path)
     %% Load deconvolved channel images
     % @author: pdzialecka
     
