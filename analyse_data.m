@@ -199,20 +199,26 @@ function [] = analyse_data(files,load_rois)
 
             % Remove small regions of connected pixels
             min_con_pixels = 25;
-            connectivity = 4; % 4
+            connectivity = 4; % default: 4
             dab_roi_mask_f = bwareaopen(dab_roi_mask,min_con_pixels,connectivity);
-%             disp([' Removed connected regions smaller than ', num2str(min_con_pixels),' with connectivity of ', num2str(connectivity), ' pixels']);
-
             dab_image_mask_f = imoverlay(dab_image_,dab_roi_mask_f,[1,0,0]);
-%             figure,imshow(dab_image_mask_2)
 
             fig3 = figure('units','normalized','outerposition',[0 0 1 1]);
-            subplot(121),imshow(dab_image_mask),title('Post threshold')
-            subplot(122),imshow(dab_image_mask_f),title('Post threshold + mask filter')
+            subplot(121),imshow(dab_image_mask),title('Mask')
+            subplot(122),imshow(dab_image_mask_f),title('Mask + filter')
             
-            fname3 = strcat(fname,'_3_H_masks.tif');
+            fname3 = strcat(fname,'_3_DAB_masks.tif');
             saveas(fig3,fullfile(results_folder,fname3));
             close(fig3);
+            
+            % alternatively, plot mask and overlay image
+%             fig3 = figure('units','normalized','outerposition',[0 0 1 1]);
+%             subplot(121),imshow(dab_roi_mask_f),title('Mask')
+%             subplot(122),imshow(dab_image_mask_f),title('Image + Filtered Mask')
+% 
+%             fname3 = strcat(fname,'_3_H_masks.tif');
+%             saveas(fig3,fullfile(results_folder,fname3));
+%             close(fig3);
 
             
             mask_name1 = strcat(fname,'_thresh_mask');

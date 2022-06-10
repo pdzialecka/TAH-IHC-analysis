@@ -47,7 +47,13 @@ function [] = deconvolve_full(files,save_images)
     %         cd(folder)
     
             %% Prepare save folder
-            save_folder = fullfile(folder,'Processed');
+%             save_folder = fullfile(folder,'Processed');
+            save_folder = fullfile(fileparts(fileparts(folder)),'Images_processed');
+
+            % create subfolder with mouse name
+            [~,mouse_name] = fileparts(folder);
+            save_folder = fullfile(save_folder,mouse_name);
+    
             if ~exist(save_folder)
                 mkdir(save_folder);
             end

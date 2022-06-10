@@ -4,7 +4,7 @@ close all;
 clear all;
 
 %% Analysis folder
-analysis_folder = 'C:\Users\Pat\OneDrive - Imperial College London\AD_TI_hipp\Analysis\IHC_test';
+analysis_folder = 'C:\Users\Pat\OneDrive - Imperial College London\AD_TI_hipp\Analysis\IHC';
 addpath(genpath(analysis_folder));
 
 %% Find data folder within cohort folder
@@ -29,11 +29,19 @@ file = files(idx).name;
 folder = files(idx).folder;
 fname = fullfile(folder,file);
 
-%% Create ROI folder
-roi_folder = fullfile(fileparts(fileparts(folder)),'ROIs');
+%% Create folder for processed images
+processed_folder = fullfile(fileparts(fileparts(folder)),'Images_processed');
 
 % create subfolder with mouse name
 [~,mouse_name] = fileparts(folder);
+processed_folder = fullfile(processed_folder,mouse_name);
+
+if ~exist(processed_folder)
+    mkdir(processed_folder);
+end
+
+%% Create ROI folder
+roi_folder = fullfile(fileparts(fileparts(folder)),'ROIs');
 roi_folder = fullfile(roi_folder,mouse_name);
 
 if ~exist(roi_folder)
@@ -42,8 +50,6 @@ end
 
 %% Create results folder
 results_folder = fullfile(fileparts(fileparts((folder))),'Results');
-
-% create subfolder with mouse name
 results_folder = fullfile(results_folder,mouse_name);
 
 if ~exist(results_folder)
@@ -67,7 +73,7 @@ MIJ.run("Colour Deconvolution", "vectors=[H DAB]");
 %% Save results
 % Save combined tif file
 MIJ.selectWindow("new (RGB)")
-fname_1 = strcat(fname(1:end-4),'.tif');
+fname_1 = fullfile(processed_folder,strcat(file(1:end-4),'.tif'));
 IJ.save(fname_1)
 MIJ.run("Close")
 
@@ -78,7 +84,7 @@ MIJ.run("Close")
 % Save deconvolved images as a stack
 MIJ.run("Images to Stack", "use");
 MIJ.run("Grays");
-fname_2 = strcat(fname(1:end-4),'_deconv.tif');
+fname_2 = fullfile(processed_folder,strcat(file(1:end-4),'_deconv.tif'));
 IJ.save(fname_2)
 
 %% Close Fiji

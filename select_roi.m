@@ -36,7 +36,7 @@ function [rois_x,rois_y] = select_roi(file_,magnification)
     for roi_idx = 1:roi_no
         fname = strcat(file(1:end-11),'_',num2str(roi_order_no(roi_idx)),'_roi_',roi_fnames{roi_idx},'.mat');
         file_roi_fnames{roi_idx} = fullfile(roi_folder,fname);
-        file_fnames{roi_idx} = fname;
+        file_fnames{roi_idx} = fname(1:end-4);
         file_exists(roi_idx) = exist(fullfile(roi_folder,fname));
     end
     
