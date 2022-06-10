@@ -19,10 +19,11 @@ function [] = deconvolve_full(files,save_images)
     addpath(genpath('Libraries'));
 
     %% Add FIJI / MIJ paths
-    % Change these depending on local directories
-    javaaddpath 'C:\Program Files\MATLAB\R2021a\java\jar\mij.jar'
-    javaaddpath 'C:\Users\Pat\Desktop\Fiji.app\jars\ij-1.53q.jar'
-    addpath(genpath('C:\Users\Pat\Desktop\Fiji.app\scripts'));
+    setup_miji();
+%     % Change these depending on local directories
+%     javaaddpath 'C:\Program Files\MATLAB\R2021a\java\jar\mij.jar'
+%     javaaddpath 'C:\Users\Pat\Desktop\Fiji.app\jars\ij-1.53q.jar'
+%     addpath(genpath('C:\Users\Pat\Desktop\Fiji.app\scripts'));
     
     %% Process all files in the folder
     
@@ -76,7 +77,6 @@ function [] = deconvolve_full(files,save_images)
             MIJ.selectWindow("new (RGB)")
             if save_images
                 fname_1 = fullfile(save_folder,strcat(file(1:end-4),'.tif'));
-%                 fname_1 = strcat(fname(1:end-4),'.tif');
                 IJ.save(fname_1)
             end
             MIJ.run("Close")

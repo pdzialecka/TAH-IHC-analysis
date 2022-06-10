@@ -83,7 +83,7 @@ function [rois_x,rois_y] = select_roi(file_,magnification)
 
                     roi_point = drawpoint();
 
-                    %% Diplay ROI on DAB image
+                    %% Display ROI on DAB image
                     roi_point.Position = round(roi_point.Position);
                     roi_x_1 = round(roi_point.Position(2)-roi_size(1)/2);
                     roi_y_1 = round(roi_point.Position(1)-roi_size(2)/2);
@@ -93,14 +93,14 @@ function [rois_x,rois_y] = select_roi(file_,magnification)
 
                     roi_rect = drawrectangle('Position',[roi_y_1,roi_x_1,roi_size(2),roi_size(1)]);
                     title(sprintf('%s ROI',roi_names{roi_idx}));
-
+                    
+                    %% Diplay ROI on DAB image
                     fig2 = figure('units','normalized','outerposition',[0 0 1 1]);
                     imshow(dab_image),colormap(dab_colormap)
                     roi_rect = drawrectangle('Position',[roi_y_1,roi_x_1,roi_size(2),roi_size(1)]);
                     title(sprintf('%s ROI',roi_names{roi_idx}));
 
-
-                    %% Display ROI selected
+                    %% Display zoomed in ROI selected
                     h_image_roi = h_image(roi_x,roi_y);
                     dab_image_roi = dab_image(roi_x,roi_y);
 

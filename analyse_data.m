@@ -27,24 +27,26 @@ function [] = analyse_data(files,load_rois)
         file = files(idx).name;
         folder = files(idx).folder;
 
-        %% Image type
+        %% Image type & threshold
         if contains(file,'moc23')
             image_type = 'moc23';
-            pixel_thresh = 0.65; % 160;
+%             pixel_thresh = 0.65; % 160;
 
         elseif contains(file,'cfos')
             image_type = 'cfos';
-            pixel_thresh = 0.2; % decrease to detect only v dark cells
+%             pixel_thresh = 0.2; % decrease to detect only v dark cells
 
         elseif contains(file,'GFAP')
             image_type = 'GFAP';
-            pixel_thresh = 0.5;
+%             pixel_thresh = 0.5;
 
         elseif contains(file,'Iba1')
             image_type = 'Iba1';
-            pixel_thresh = 0.35;
-
+%             pixel_thresh = 0.35;
         end
+        
+        pixel_thresh = get_antibody_threshold(image_type);
+        
     
         %% Results folder
         results_folder = fullfile(fileparts(fileparts(fileparts(folder))),'Results');
