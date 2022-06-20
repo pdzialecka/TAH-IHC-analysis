@@ -14,12 +14,12 @@ addpath(genpath(analysis_folder));
 base_folder = 'C:\Users\Pat\Desktop\TAH';
 
 %% Analysis steps
-deconvolve = 1;
+deconvolve = 0;
 select_rois = 1;
 analyse = 1;
 analyse_all = 1;
 
-all_image_types = {'moc23','cfos','GFAP','Iba1'};
+all_image_types = {'moc23','cfos','GFAP','Iba1','12f4','ki67','ct695'};
 image_type = 'moc23'; % specific analysis
 summarise = 1;
 
@@ -39,11 +39,12 @@ for cohort_idx = 1:length(cohort_folders)
     cohort_folder = cohort_folders{cohort_idx};
     data_folder = fullfile(base_folder,'Data',cohort_folder,'IHC\Images');
     processed_folder = fullfile(base_folder,'Data',cohort_folder,'IHC\Images_processed');
-
-    if ~exists(data_folder)
+    
+    %%
+    if exist(data_folder)
         %% Deconvolve all files inside a folder
         if deconvolve
-            files = dir(fullfile(data_folder,'**','*.svs'));
+            files = dir(fullfile(data_folder,'*','*.svs'));
             deconvolve_full(files);
 
             cd(analysis_folder);
@@ -51,7 +52,7 @@ for cohort_idx = 1:length(cohort_folders)
 
         %% Pre-select all ROIs
         if select_rois
-            magnification = 10;
+            magnification = 20;
 
             if analyse_all
                 files = dir(fullfile(processed_folder,'**',strcat('*deconv.tif')));
@@ -59,7 +60,7 @@ for cohort_idx = 1:length(cohort_folders)
                 files = dir(fullfile(processed_folder,'**',strcat('*',image_type,'*deconv.tif')));
             end
 
-        %     files = files(3); % test file
+%             files = files(1); % test file
 
             for idx = 1:length(files)
                 file_ = files(idx);
@@ -77,7 +78,7 @@ for cohort_idx = 1:length(cohort_folders)
                 files = dir(fullfile(processed_folder,'**',strcat('*',image_type,'*deconv.tif')));
             end
 
-        %     files = files([3]); % test file
+%             files = files(1); % test file
             analyse_data(files,load_rois);
 
         end

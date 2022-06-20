@@ -49,10 +49,10 @@ function [] = analyse_data(files,load_rois)
         
     
         %% Results folder
-        results_folder = fullfile(fileparts(fileparts(fileparts(folder))),'Results');
+        results_folder = fullfile((fileparts(fileparts(folder))),'Results');
 
         % create subfolder with mouse name
-        [~,mouse_name] = fileparts(fileparts(folder));
+        [~,mouse_name] = fileparts((folder));
         results_folder = fullfile(results_folder,mouse_name);
 
         if ~exist(results_folder)
@@ -71,7 +71,7 @@ function [] = analyse_data(files,load_rois)
             fname = strcat(file(1:end-11),'_',num2str(roi_order_no(roi_idx)),'_roi_',roi_fnames{roi_idx},'.mat');
     %       
             %% ROI folder
-            data_folder = fileparts(folder);
+            data_folder = (folder);
             roi_folder = find_roi_folder(data_folder);
 
             %% Load preselected ROI

@@ -9,11 +9,21 @@ function [] = summarise_results(base_folder,cohort_case,image_type)
     if cohort_case == 1
         cohort_idxs = [1];
     elseif cohort_case == 2
-        cohort_idxs = [2,3]; % [2,3,4,5];
+        cohort_idxs = [2,3,4,5];
+    end
+    
+    all_cohort_folders = dir(fullfile(base_folder,'Data','Cohort*'));
+%     data_folders = all_cohort_folders(cohort_idxs);
+
+    include_idxs = [];
+    for folder_idx = 1:length(all_cohort_folders)
+        cohort_no = str2num(all_cohort_folders(folder_idx).name(end));
+        if any(cohort_idxs==cohort_no)
+            include_idxs = [include_idxs folder_idx];
+        end
     end
 
-    all_cohort_folders = dir(fullfile(base_folder,'Data','Cohort*'));
-    data_folders = all_cohort_folders(cohort_idxs);
+    data_folders = all_cohort_folders(include_idxs);
 
     %% Results folder
     results_folder = fullfile(base_folder,'IHC_results');
@@ -60,10 +70,10 @@ function [] = summarise_results(base_folder,cohort_case,image_type)
     for i = 1:length(data_folders)
         data_folder = fullfile(data_folders(i).folder,data_folders(i).name);
 
-        cohort_names = cohort_infos{i}.mouse_names;
+        m_names = cohort_infos{i}.mouse_names;
 
-        for j = 1:length(cohort_names)
-            idx_files = dir(fullfile(data_folder,'IHC','Results',cohort_names{j},strcat('*',image_type,'*results.mat')));
+        for j = 1:length(m_names)
+            idx_files = dir(fullfile(data_folder,'IHC','Results',m_names{j},strcat('*',image_type,'*results.mat')));
 
             result_files = [result_files; idx_files];
         end

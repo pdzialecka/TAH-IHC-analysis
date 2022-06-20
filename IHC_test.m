@@ -10,7 +10,7 @@ addpath(genpath(analysis_folder));
 %% Find data folder within cohort folder
 % here, use example image inside Data subfolder of analysis folder
 base_folder = fullfile(analysis_folder);
-cohort_folder = 'Cohort_2';  % ****
+cohort_folder = 'Cohort_3';  % ****
 data_folder = fullfile(base_folder,'Data',cohort_folder,'Images');
 
 %% Find all files inside the data folder

@@ -7,8 +7,23 @@ function [rois_x,rois_y] = select_roi(file_,magnification)
 
     %% Default input options
     if ~exist('magnification','var')
-        magnification = 10; % 10 or 20x
+        magnification = 20; % 10 or 20x
     end
+    
+    %%
+    pixel_size = 0.504; % um
+    
+    roi_1x = round([2317,4063]/pixel_size)*10; % from standard 10x size
+    roi_size = roi_1x/magnification;
+    
+%     if magnification == 10
+% %         roi_size = round([1100,700]/pixel_size);
+%         roi_size = round([2317,4063]/pixel_size); % standard image
+%         
+%     elseif magnification == 20
+%         roi_size = round([2317,4063]/pixel_size/2);
+%     end
+    
     
     %% H DAB colormaps
     % for easier visualisation
@@ -26,8 +41,8 @@ function [rois_x,rois_y] = select_roi(file_,magnification)
     folder = file_.folder;
     
     %% ROI folder
-    data_folder = fileparts(folder);
-    roi_folder = find_roi_folder(data_folder);
+%     data_folder = fileparts(folder);
+    roi_folder = find_roi_folder(folder);
     
     file_fnames = {};
     file_roi_fnames = {};
@@ -65,7 +80,7 @@ function [rois_x,rois_y] = select_roi(file_,magnification)
             %%
             if ~exist(roi_fname,'file')
                 %%
-                roi_size = round(size(dab_image)/magnification);
+%                 roi_size = round(size(dab_image)/magnification);
                 roi_accepted = 0;
 
                 while ~roi_accepted

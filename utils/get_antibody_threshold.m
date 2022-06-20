@@ -9,8 +9,17 @@ function [pixel_thresh] = get_antibody_threshold(antibody_type)
     if strcmp(antibody_type,'moc23')
         pixel_thresh = 0.65; % 160;
 
+    elseif strcmp(antibody_type,'12f4')
+        pixel_thresh = 0.65;
+        
+    elseif strcmp(antibody_type,'ct695')
+        pixel_thresh = 0.65;
+        
     elseif strcmp(antibody_type,'cfos')
         pixel_thresh = 0.2; % decrease to detect only v dark cells
+        
+    elseif strcmp(antibody_type,'ki67')
+        pixel_thresh = 0.2;
 
     elseif strcmp(antibody_type,'GFAP')
         pixel_thresh = 0.5;
