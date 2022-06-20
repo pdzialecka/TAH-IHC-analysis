@@ -1,4 +1,4 @@
-function [roi_folder] = find_roi_folder(data_folder)
+function [roi_folder,mouse_name] = find_roi_folder(data_folder)
     %% Find ROI folder associated with a mouse data folder
     % @author: pdzialecka
 

@@ -26,6 +26,17 @@ function [] = analyse_data(files,load_rois)
         
         file = files(idx).name;
         folder = files(idx).folder;
+        
+        %% ROI folder
+        data_folder = (folder);
+        [roi_folder,mouse_name] = find_roi_folder(data_folder);
+
+        %% ROI images folder
+        roi_img_folder = fullfile(fileparts(fileparts(folder)),'ROI_images',mouse_name);
+
+        if ~exist(roi_img_folder)
+            mkdir(roi_img_folder);
+        end
 
         %% Image type & threshold
         if contains(file,'moc23')
@@ -62,17 +73,13 @@ function [] = analyse_data(files,load_rois)
         %% Load deconvolved images
         file_path = fullfile(folder,file);
         [h_image,dab_image] = load_deconvolved_images(file_path);
-
+        
         %% Find ROIs
         roi_not_found = 0;
 
         for roi_idx = 1:roi_no
     % %         fname = strcat(file(1:end-11),'_roi_',roi_fnames{roi_idx},'.mat');
             fname = strcat(file(1:end-11),'_',num2str(roi_order_no(roi_idx)),'_roi_',roi_fnames{roi_idx},'.mat');
-    %       
-            %% ROI folder
-            data_folder = (folder);
-            roi_folder = find_roi_folder(data_folder);
 
             %% Load preselected ROI
             if load_rois
@@ -231,6 +238,14 @@ function [] = analyse_data(files,load_rois)
             mask_name2 = strcat(fname,'_thresh_filt_mask');
             save(fullfile(results_folder,mask_name2),'dab_roi_mask');
             fprintf('Mask %s saved\n',mask_name2);
+            
+            %% Save ROI images
+            roi_image = cat(3,h_image_,dab_image_);
+%             magnification = 10; % load from inside roi_file later
+%             img_fname = fullfile(roi_img_folder,strcat(fname,'_',num2str(magnification),'x'));
+            
+            img_fname = fullfile(roi_img_folder,strcat(fname));
+            save(img_fname,'roi_image');
 
             %% Density (% area covered)
             positive_pixels = sum(dab_roi_mask,[1,2]);

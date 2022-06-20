@@ -14,7 +14,7 @@ addpath(genpath(analysis_folder));
 base_folder = 'C:\Users\Pat\Desktop\TAH';
 
 %% Analysis steps
-deconvolve = 0;
+deconvolve = 1;
 select_rois = 1;
 analyse = 1;
 analyse_all = 1;

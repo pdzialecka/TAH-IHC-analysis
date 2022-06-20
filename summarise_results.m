@@ -2,6 +2,10 @@ function [] = summarise_results(base_folder,cohort_case,image_type)
     %% Create summary plot of results per image type
 	% @author: pdzialecka
 
+    %% H DAB colormaps
+    % for easier visualisation
+    [h_colormap,dab_colormap] = create_hdab_colormaps();
+
     %% Data folders
 %     base_folder = 'C:\Users\Pat\Desktop\TAH';
 %     cohort_case = 1; % 1 = cohort 1 (13 mo). 2 = cohorts 2-5 (6 mo)
@@ -66,6 +70,7 @@ function [] = summarise_results(base_folder,cohort_case,image_type)
 
     %% Find result files
     result_files = [];
+    roi_img_files = [];
 
     for i = 1:length(data_folders)
         data_folder = fullfile(data_folders(i).folder,data_folders(i).name);
@@ -74,8 +79,10 @@ function [] = summarise_results(base_folder,cohort_case,image_type)
 
         for j = 1:length(m_names)
             idx_files = dir(fullfile(data_folder,'IHC','Results',m_names{j},strcat('*',image_type,'*results.mat')));
-
             result_files = [result_files; idx_files];
+            
+            idx_2_files = dir(fullfile(data_folder,'IHC','ROI_images',m_names{j},strcat('*',image_type,'*.mat')));
+            roi_img_files = [roi_img_files; idx_2_files];
         end
 
         % faster but wrong order
@@ -150,6 +157,34 @@ function [] = summarise_results(base_folder,cohort_case,image_type)
         file_name = sprintf('%s_density_roi_%s_data.mat',image_type,roi_fnames{roi_idx});
         save(fullfile(cohort_results_folder,file_name),'roi_results');
         
+    end
+    
+    %% Plot DAB images for comparison
+    max_n = 6;
+    
+    comparison_folder = fullfile(cohort_results_folder,'ROI_comparison');
+    if ~exist(comparison_folder)
+        mkdir(comparison_folder);
+    end
+    
+    for roi_idx = 1:roi_no
+        
+        roi_fname = roi_fnames{roi_idx};
+        img_idxs = find(contains({roi_img_files.name}',roi_fname));
+        
+        figure('units','normalized','outerposition',[0 0 1 1]);
+        
+        for i = 1:length(img_idxs)
+            roi_img = load(fullfile(roi_img_files(img_idxs(i)).folder,roi_img_files(img_idxs(i)).name)).roi_image;
+            subplot(2,round(max_n/2),i),imshow(roi_img(:,:,2))
+            colormap(dab_colormap)
+            title(roi_img_files(img_idxs(i)).name,'Interpreter','none')
+        end
+        
+        fig_name = sprintf('roi_images_%s_%s.tif',image_type,roi_fnames{roi_idx});
+        saveas(gcf,fullfile(comparison_folder,fig_name));
+        close(gcf);
+
     end
     
 end

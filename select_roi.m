@@ -42,7 +42,7 @@ function [rois_x,rois_y] = select_roi(file_,magnification)
     
     %% ROI folder
 %     data_folder = fileparts(folder);
-    roi_folder = find_roi_folder(folder);
+    [roi_folder,mouse_name] = find_roi_folder(folder);
     
     file_fnames = {};
     file_roi_fnames = {};
@@ -56,7 +56,6 @@ function [rois_x,rois_y] = select_roi(file_,magnification)
     end
     
     all_rois_exist = all(file_exists);
-    
     
     %%
     if ~all_rois_exist
@@ -164,6 +163,7 @@ function [rois_x,rois_y] = select_roi(file_,magnification)
                         % roi details
                         roi.name = roi_names{roi_idx};
                         roi.fname = roi_fnames{roi_idx};
+                        roi.magnification = magnification;
                         roi.x = roi_x;
                         roi.y = roi_y;
 
