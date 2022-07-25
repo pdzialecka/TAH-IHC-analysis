@@ -5,8 +5,8 @@ function [] = analyse_data(files,load_rois)
     % Variables to explore:
     % * pixel_thresh_factor (default: 1)
     % * min_con_pixels (default: 25 at 20x, 100 at 10x)
-    % * k3 (spatial filter variable) - currently no difference after filter?
-    % * magnification (may affect other parameters)
+    % * k3 (spatial filter variable) - currently not much difference after filter
+    % * roi_size / magnification (may affect other parameters)
     
     %% Default input options
     if ~exist('load_rois','var')
@@ -20,7 +20,7 @@ function [] = analyse_data(files,load_rois)
     %% ROIs
     [~,roi_fnames,roi_no] = get_roi_list();
     roi_order_no = 1:roi_no;
-    
+
     %%
     for idx = 1:length(files)
         
@@ -33,10 +33,10 @@ function [] = analyse_data(files,load_rois)
 
         %% ROI images folder
         roi_img_folder = fullfile(fileparts(fileparts(folder)),'ROI_images',mouse_name);
-
-        if ~exist(roi_img_folder)
-            mkdir(roi_img_folder);
-        end
+% 
+%         if ~exist(roi_img_folder)
+%             mkdir(roi_img_folder);
+%         end
 
         %% Image type & threshold
         if contains(file,'moc23')
@@ -71,8 +71,8 @@ function [] = analyse_data(files,load_rois)
         end
 
         %% Load deconvolved images
-        file_path = fullfile(folder,file);
-        [h_image,dab_image] = load_deconvolved_images(file_path);
+%         file_path = fullfile(folder,file);
+%         [h_image,dab_image] = load_deconvolved_images(file_path);
         
         %% Find ROIs
         roi_not_found = 0;
@@ -108,15 +108,20 @@ function [] = analyse_data(files,load_rois)
         for roi_idx = 1:roi_no
             
             %%
-            fname = strcat(file(1:end-11),'_',num2str(roi_order_no(roi_idx)),'_roi_',roi_fnames{roi_idx},'');
-
-            %% Extract ROIs + denoise
-            dab_image_roi = dab_image(rois_x{roi_idx},rois_y{roi_idx});
-            h_image_roi = h_image(rois_x{roi_idx},rois_y{roi_idx});
-
+            fname = strcat(file(1:end-11),'_',num2str(roi_order_no(roi_idx)),'_roi_',roi_fnames{roi_idx},'');            
+            
+            %% Extract ROIs from main image (slower)
+%             dab_image_roi = dab_image(rois_x{roi_idx},rois_y{roi_idx});
+%             h_image_roi = h_image(rois_x{roi_idx},rois_y{roi_idx});
+% 
+            
+            %% Load ROI image
+            file_path = fullfile(roi_img_folder,strcat(fname,'.tif'));
+            [h_image_roi,dab_image_roi,~] = load_deconvolved_images(file_path);
+            
+            %% Denoise images
             dab_image_ = dab_image_roi;
             h_image_ = h_image_roi;
-
 
             % Spatial smoothing
             spatial_avg = 1;
@@ -193,7 +198,7 @@ function [] = analyse_data(files,load_rois)
             dab_image_mask = imoverlay(dab_image_,dab_roi_mask,[1,0,0]); % red
 %             figure,imshow(dab_image_mask)
 
-            %%
+            %
             % Mask filtering from Nir's scripts
 % 
             % Morphological opening using a disc kernel (smoothes contours, breaks
@@ -216,7 +221,7 @@ function [] = analyse_data(files,load_rois)
             
             fname3 = strcat(fname,'_3_DAB_masks.tif');
             saveas(fig3,fullfile(results_folder,fname3));
-            close(fig3);
+%             close(fig3);
             
             % alternatively, plot mask and overlay image
 %             fig3 = figure('units','normalized','outerposition',[0 0 1 1]);
@@ -240,12 +245,12 @@ function [] = analyse_data(files,load_rois)
             fprintf('Mask %s saved\n',mask_name2);
             
             %% Save ROI images
-            roi_image = cat(3,h_image_,dab_image_);
-%             magnification = 10; % load from inside roi_file later
-%             img_fname = fullfile(roi_img_folder,strcat(fname,'_',num2str(magnification),'x'));
-            
-            img_fname = fullfile(roi_img_folder,strcat(fname));
-            save(img_fname,'roi_image');
+%             roi_image = cat(3,h_image_,dab_image_);
+% %             magnification = 10; % load from inside roi_file later
+% %             img_fname = fullfile(roi_img_folder,strcat(fname,'_',num2str(magnification),'x'));
+%             
+%             img_fname = fullfile(roi_img_folder,strcat(fname));
+%             save(img_fname,'roi_image');
 
             %% Density (% area covered)
             positive_pixels = sum(dab_roi_mask,[1,2]);

@@ -156,7 +156,7 @@ function [rois_x,rois_y] = select_roi(file_,roi_size_um)
                     %% Save accepted ROI
                     if roi_accepted
 
-                        %% ROI coordinates
+                        %% Save ROI coordinates
                         % figures
                         fname1 = strcat(fname,'_1_H_full.tif');
                         saveas(fig1,fullfile(roi_folder,fname1));
@@ -184,7 +184,7 @@ function [rois_x,rois_y] = select_roi(file_,roi_size_um)
                         save(roi_fname,'roi');
                         fprintf('ROI %s saved\n',fname);
 
-                        %% ROI image as tiff
+                        %% Save ROI image as tiff
                         roi_image = cat(3,h_image_roi,dab_image_roi,res_image_roi);
                         img_fname = fullfile(roi_img_folder,strcat(fname,'.tif'));
 %                         save(img_fname,'roi_image');
