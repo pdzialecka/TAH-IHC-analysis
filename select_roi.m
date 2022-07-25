@@ -1,4 +1,4 @@
-function [rois_x,rois_y] = select_roi(file_,magnification)
+function [rois_x,rois_y] = select_roi(file_,roi_size_um)
     %% Select and save all required ROIs for a given image
     % @author: pdzialecka
     
@@ -6,23 +6,24 @@ function [rois_x,rois_y] = select_roi(file_,magnification)
     % If it does, it skipps the condition to not override any existing ROIs
 
     %% Default input options
-    if ~exist('magnification','var')
-        magnification = 20; % 10 or 20x
+%     if ~exist('magnification','var')
+%         magnification = 20; % 10 or 20x
+%     end
+    
+    if ~exist('roi_size','var')
+        roi_size_um = [400,400]; % in um
     end
+    
     
     %%
     pixel_size = 0.504; % um
     
-    roi_1x = round([2317,4063]/pixel_size)*10; % from standard 10x size
-    roi_size = roi_1x/magnification;
+    % magnification approach
+%     roi_1x = round([2317,4063]/pixel_size)*10; % from standard 10x size
+%     roi_size = roi_1x/magnification;
     
-%     if magnification == 10
-% %         roi_size = round([1100,700]/pixel_size);
-%         roi_size = round([2317,4063]/pixel_size); % standard image
-%         
-%     elseif magnification == 20
-%         roi_size = round([2317,4063]/pixel_size/2);
-%     end
+    % arbitrary roi size in um
+    roi_size = round(roi_size_um/pixel_size);
     
     
     %% H DAB colormaps
@@ -57,11 +58,20 @@ function [rois_x,rois_y] = select_roi(file_,magnification)
     
     all_rois_exist = all(file_exists);
     
+    %% ROI images folder
+    roi_img_folder = fullfile(fileparts(fileparts(folder)),'ROI_images',mouse_name);
+
+    if ~exist(roi_img_folder)
+        mkdir(roi_img_folder);
+    end
+    
     %%
     if ~all_rois_exist
         %% Load deconvolved images
         file_path = fullfile(folder,file);
-        [h_image,dab_image] = load_deconvolved_images(file_path);
+        [h_image,dab_image,res_image] = load_deconvolved_images(file_path);
+        
+%         tiff_file = Tiff(file_path);
 
         %%
         for roi_idx = 1:roi_no
@@ -117,6 +127,7 @@ function [rois_x,rois_y] = select_roi(file_,magnification)
                     %% Display zoomed in ROI selected
                     h_image_roi = h_image(roi_x,roi_y);
                     dab_image_roi = dab_image(roi_x,roi_y);
+                    res_image_roi = res_image(roi_x,roi_y);
 
                     fig3 = figure('units','normalized','outerposition',[0 0 1 1]);
                     ax(1) = subplot(121); imshow(h_image_roi)
@@ -142,9 +153,10 @@ function [rois_x,rois_y] = select_roi(file_,magnification)
                             close(fig3);
                     end
 
-                    %% Save accepted ROI coordinates
+                    %% Save accepted ROI
                     if roi_accepted
 
+                        %% ROI coordinates
                         % figures
                         fname1 = strcat(fname,'_1_H_full.tif');
                         saveas(fig1,fullfile(roi_folder,fname1));
@@ -152,7 +164,8 @@ function [rois_x,rois_y] = select_roi(file_,magnification)
                         fname2 = strcat(fname,'_2_DAB_full.tif');
                         saveas(fig2,fullfile(roi_folder,fname2));
 
-                        fname3 = strcat(fname,'_3_H_DAB_',num2str(magnification),'x.tif');
+%                         fname3 = strcat(fname,'_3_H_DAB_',num2str(magnification),'x.tif');
+                        fname3 = strcat(fname,'_3_H_DAB_',num2str(roi_size(1)),'_x_',num2str(roi_size(2)),'.tif');
                         saveas(fig3,fullfile(roi_folder,fname3));
 
                         close(fig1);
@@ -163,13 +176,40 @@ function [rois_x,rois_y] = select_roi(file_,magnification)
                         % roi details
                         roi.name = roi_names{roi_idx};
                         roi.fname = roi_fnames{roi_idx};
-                        roi.magnification = magnification;
+%                         roi.magnification = magnification;
+                        roi.size = roi_size;
                         roi.x = roi_x;
                         roi.y = roi_y;
 
                         save(roi_fname,'roi');
                         fprintf('ROI %s saved\n',fname);
 
+                        %% ROI image as tiff
+                        roi_image = cat(3,h_image_roi,dab_image_roi,res_image_roi);
+                        img_fname = fullfile(roi_img_folder,strcat(fname,'.tif'));
+%                         save(img_fname,'roi_image');
+
+                        for i = 1:size(roi_image,3)
+                            if i==1
+                                imwrite(roi_image(:,:,i),img_fname,'Compression','none','WriteMode','overwrite');
+                            else
+                                imwrite(roi_image(:,:,i),img_fname,'Compression','none','WriteMode','append');
+                            end
+                        end
+
+%                         t = Tiff(img_fname,'w');
+%                         tagstruct.ImageLength = size(roi_image,1);
+%                         tagstruct.ImageWidth = size(roi_image,2);
+%                         tagstruct.Photometric = getTag(tiff_file,'Photometric');
+%                         tagstruct.Compression = getTag(tiff_file,'Compression');
+%                         tagstruct.SamplesPerPixel = 2;
+%                         tagstruct.PlanarConfiguration = getTag(tiff_file,'PlanarConfiguration');
+%                         tagstruct.BitsPerSample = getTag(tiff_file,'BitsPerSample');
+%                         
+%                         t.setTag(tagstruct);
+%                         write(t,roi_image);
+%                         close(t);
+                        
                     end
                 end
 
