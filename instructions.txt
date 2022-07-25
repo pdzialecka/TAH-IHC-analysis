@@ -1,7 +1,7 @@
 IHC analysis instructions
 
 Required sofware
-* Matlab
+* Matlab + Image Processing Toolbox, Statistics and Machine Learning Toolbox
 * Fiji
 
 Setup instructions

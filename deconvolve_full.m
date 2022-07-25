@@ -38,22 +38,28 @@ function [] = deconvolve_full(files,save_images)
     % MIJ.start;
     % MIJ.setupExt('C:\Program Files\MATLAB\R2021a\java\jar');
 
+    %% Log command window messages for any errors
+%     diary_file = fullfile(fileparts(fileparts(files(1).folder)),'deconvolution_log.txt');
+%     diary diary_file
+    
     %%
-    try
-        for idx = 1:length(files)
+%     try
+    for idx = 1:length(files)
+        
+        try
             %% File info
             file = files(idx).name;
             folder = files(idx).folder;
     %         cd(folder)
-    
+
             %% Prepare save folder
-%             save_folder = fullfile(folder,'Processed');
+    %             save_folder = fullfile(folder,'Processed');
             save_folder = fullfile(fileparts(fileparts(folder)),'Images_processed');
 
             % create subfolder with mouse name
             [~,mouse_name] = fileparts(folder);
             save_folder = fullfile(save_folder,mouse_name);
-    
+
             if ~exist(save_folder)
                 mkdir(save_folder);
             end
@@ -102,7 +108,7 @@ function [] = deconvolve_full(files,save_images)
                 fname_2 = fullfile(save_folder,strcat(file(1:end-4),'_deconv.tif'));
                 IJ.save(fname_2)
             end
-            
+
             %% Alternatively, send images back to Matlab and save from here
             % very slow for large images (full frame)
             % image_h = MIJ.getImage("new (RGB)-(Colour_1)");
@@ -115,15 +121,22 @@ function [] = deconvolve_full(files,save_images)
 
             %% Close all windows
             MIJ.closeAllWindows;
+            
+        catch
+            fprintf('ERROR: File %s was not deconvolved\n',file);
         end
+    end
 
     %% Close Fiji
     MIJ.exit;
     
-    catch
-        MIJ.closeAllWindows;
-        MIJ.exit;
-    end
+%     catch
+%         MIJ.closeAllWindows;
+%         MIJ.exit;
+%     end
+
+    %% Save diary log
+%     diary off
     
 end
 
