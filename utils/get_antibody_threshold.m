@@ -7,7 +7,7 @@ function [pixel_thresh] = get_antibody_threshold(antibody_type)
     
     %%
     if strcmp(antibody_type,'moc23')
-        pixel_thresh = 0.65; % 160;
+        pixel_thresh = 0.8; % 160;
 
     elseif strcmp(antibody_type,'12f4')
         pixel_thresh = 0.65;

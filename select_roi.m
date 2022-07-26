@@ -69,7 +69,7 @@ function [rois_x,rois_y] = select_roi(file_,roi_size_um)
     if ~all_rois_exist
         %% Load deconvolved images
         file_path = fullfile(folder,file);
-        [h_image,dab_image,res_image] = load_deconvolved_images(file_path);
+        [h_image,dab_image,res_image] = load_deconvolved_images(file_path,1);
         
 %         tiff_file = Tiff(file_path);
 

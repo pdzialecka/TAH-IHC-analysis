@@ -105,7 +105,7 @@ function [] = analyse_data(files,load_rois)
         end
 
         %% Analysis per ROI
-        for roi_idx = 1:roi_no
+        for roi_idx = 1:6 % roi_no
             
             %%
             fname = strcat(file(1:end-11),'_',num2str(roi_order_no(roi_idx)),'_roi_',roi_fnames{roi_idx},'');            
@@ -119,7 +119,7 @@ function [] = analyse_data(files,load_rois)
             file_path = fullfile(roi_img_folder,strcat(fname,'.tif'));
             [h_image_roi,dab_image_roi,~] = load_deconvolved_images(file_path);
             
-            %% Denoise images
+            %% Denoise images: gets rid of most random noise
             dab_image_ = dab_image_roi;
             h_image_ = h_image_roi;
 
@@ -209,8 +209,23 @@ function [] = analyse_data(files,load_rois)
 %             disp([' Morphological opening. Disc size used = ', num2str(strel_disk_size)]);
 %             figure,imshow(dab_roi_mask_2)
 
+            % Spatial smoothing of mask?
+%             dab_roi_mask_f = imfilter(dab_roi_mask,box_kernel,'replicate');
+%             dab_roi_mask_f = medfilt2(dab_roi_mask,[3,3]);
+% 
+%             figure,imshow(dab_roi_mask)
+%             figure,imshow(dab_roi_mask_f)
+
             % Remove small regions of connected pixels
-            min_con_pixels = 25;
+            % min diameter = 10um -> min area = ~309 pixels
+            % OR remove only very items smaller at this point + filter
+            % based on diameter later
+            
+            pixel_size = 0.504;
+            min_pix_area = round((pi*(5/pixel_size)^2)/1);
+            
+            min_con_pixels = 20; % max ~10 um long
+%             min_con_pixels = min_pix_area;
             connectivity = 4; % default: 4
             dab_roi_mask_f = bwareaopen(dab_roi_mask,min_con_pixels,connectivity);
             dab_image_mask_f = imoverlay(dab_image_,dab_roi_mask_f,[1,0,0]);
@@ -244,6 +259,92 @@ function [] = analyse_data(files,load_rois)
             save(fullfile(results_folder,mask_name2),'dab_roi_mask');
             fprintf('Mask %s saved\n',mask_name2);
             
+            %% Count number of cells
+            % remove line artefacts (eccentricity ~= 1)
+            max_eccentricity = 0.98;
+            
+            % remove cells smaller than 10 um diameter
+            % strcmp(image_type,'moc23')
+            min_size = 10;
+            min_length = (min_size/pixel_size);
+            too_small_idxs = find([cells_found(:).MajorAxisLength]<min_length);
+%             too_small_idxs_2 = find([cells_found(:).EquivDiameter]<min_length);
+%             too_diff = setdiff(too_small_idxs_2,too_small_idxs);
+
+            % EquivDiameter basically based on Area
+%             [cells_found(:).Area]-([cells_found(:).EquivDiameter]./2).^2*pi
+            
+            % look at whether the area is acceptable?
+%             too_small_area = find([cells_found(:).Area]<min_pix_area/4);
+%             too_diff = setdiff(too_small_area,too_small_idxs);
+            
+            artefacts_idxs = [];
+            too_small_idxs = [];
+            
+            
+            % find cells in initial mask
+            cells_found = regionprops(dab_roi_mask,'Area','Centroid',...
+                'BoundingBox','Circularity','Eccentricity',...
+                'MajorAxisLength','MinorAxisLength','EquivDiameter');
+            
+            
+            % line ratio would work well but can't filter using bwpropfilt
+%             line_ratio = ([cells_found(:).MajorAxisLength]-[cells_found(:).MinorAxisLength])./[cells_found(:).MajorAxisLength]
+            artefact_idxs = find([cells_found(:).Eccentricity]>max_eccentricity);
+                       
+            rm_idxs = [artefact_idxs, too_small_idxs];
+            
+            figure,imshow(dab_roi_mask),hold on
+            for i = rm_idxs
+                if any(artefact_idxs==i)
+                    col = 'b';
+                    if any(too_small_idxs==i)
+                        col = 'm';
+                    end
+                elseif any(too_small_idxs==i)
+                    col = 'r';
+                else
+                    col = 'r';
+                end
+                h = rectangle('Position',cells_found(i).BoundingBox);
+                set(h,'EdgeColor',col);
+                1;
+            end
+            
+%             cells_found(rm_idxs) = [];
+%             cell_no = length(cells_found);
+%             
+%             figure,imshow(dab_roi_mask),hold on
+%             for i = 1:cell_no
+%                 h = rectangle('Position',cells_found(i).BoundingBox);
+%                 set(h,'EdgeColor','r');
+%                 1;
+%             end
+            
+
+            % create updated mask with plaques only
+            dab_roi_plaques_mask = bwpropfilt(dab_roi_mask,'Eccentricity',[0,max_eccentricity]);
+            dab_roi_plaques_mask = bwpropfilt(dab_roi_plaques_mask,'MajorAxisLength',[min_length,inf]);
+            figure,imshow(dab_roi_plaques_mask)
+            
+            cells_found = regionprops(dab_roi_plaques_mask,'Area','Centroid',...
+                'BoundingBox','Circularity','Eccentricity',...
+                'MajorAxisLength','EquivDiameter','Image');
+            
+            cell_no = length(cells_found);
+            
+            
+            %% Fiji approach
+%             setup_miji();
+%             Miji;
+%             IJ = ij.IJ;
+%             
+%             %%
+%             imp = copytoImagePlus(uint32(dab_roi_mask_f));
+%             imp.show();
+%             
+%             MIJ.run("Analyze Particles...");
+            
             %% Save ROI images
 %             roi_image = cat(3,h_image_,dab_image_);
 % %             magnification = 10; % load from inside roi_file later
@@ -253,8 +354,8 @@ function [] = analyse_data(files,load_rois)
 %             save(img_fname,'roi_image');
 
             %% Density (% area covered)
-            positive_pixels = sum(dab_roi_mask,[1,2]);
-            total_pixels = size(dab_roi_mask,1)*size(dab_roi_mask,2);
+            positive_pixels = sum(dab_roi_plaques_mask,[1,2]);
+            total_pixels = size(dab_roi_plaques_mask,1)*size(dab_roi_plaques_mask,2);
 
             density = round(positive_pixels/total_pixels*100,1);
             fprintf('Area covered for %s ROI = %1.1f %% \n', fname, density)
@@ -265,6 +366,8 @@ function [] = analyse_data(files,load_rois)
             results.density = density;
             results.positive_pixels = positive_pixels;
             results.total_pixels = total_pixels;
+            results.cells_founds = cells_found;
+            results.cell_no = cell_no;
             
             fname_r = strcat(fname,'_results.mat');
             save(fullfile(results_folder,fname_r),'results');
