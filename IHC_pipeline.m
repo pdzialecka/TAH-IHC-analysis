@@ -16,16 +16,16 @@ base_folder = 'C:\Users\Pat\Desktop\TAH';
 
 %% Analysis steps
 deconvolve = 0;
-select_rois = 1;
-analyse = 0;
+select_rois = 0;
+analyse = 1;
 analyse_all = 0;
 summarise = 0;
 
 %% Analysis settings
 % magnification = 20;
 roi_size_um = [500,500]; % 400 x 400 um
-all_image_types = {'moc23','cfos','GFAP','Iba1','12f4','ki67','ct695'};
-image_type = 'moc23'; % specific analysis
+all_image_types = {'moc23','12f4','ct695','iba1','gfap','cfos','ki67'};
+image_type = 'gfap'; % specific analysis
 
 %% Cohort case
 cohort_case = 2; % 1 = 13mo (cohort 1), 2 = 6mo (cohorts 2-5)
@@ -39,7 +39,7 @@ end
 
 
 %% Within animal analysis inside cohort folders
-for cohort_idx = 1:length(cohort_folders)
+for cohort_idx = 4 % 1:length(cohort_folders)
     
     %% File directories
     cohort_folder = cohort_folders{cohort_idx};
@@ -89,7 +89,7 @@ for cohort_idx = 1:length(cohort_folders)
 %                 files = dir(fullfile(roi_images_folder,'**',strcat('*',image_type,'*.tif')));
             end
 
-%             files = files(1); % test file
+            files = files(1); % test file
             analyse_data(files,load_rois);
 
         end

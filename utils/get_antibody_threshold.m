@@ -1,4 +1,4 @@
-function [pixel_thresh] = get_antibody_threshold(antibody_type)
+function [pixel_thresh,min_size,do_watershed] = get_antibody_threshold(antibody_type)
     %% Define detection threshold for each antibody
     % @author: pdzialecka
     
@@ -8,24 +8,38 @@ function [pixel_thresh] = get_antibody_threshold(antibody_type)
     %%
     if strcmp(antibody_type,'moc23')
         pixel_thresh = 0.8; % 160;
+        min_size = 10; % um
+        do_watershed = 0;
 
     elseif strcmp(antibody_type,'12f4')
-        pixel_thresh = 0.65;
+        pixel_thresh = 0.7;
+        min_size = 10;
+        do_watershed = 0;
         
     elseif strcmp(antibody_type,'ct695')
         pixel_thresh = 0.65;
-        
+        min_size = 10;
+        do_watershed = 0;
+
     elseif strcmp(antibody_type,'cfos')
-        pixel_thresh = 0.2; % decrease to detect only v dark cells
-        
+        pixel_thresh = 0.6; % decrease to detect only v dark cells
+        min_size = 5;
+        do_watershed = 1;
+
     elseif strcmp(antibody_type,'ki67')
         pixel_thresh = 0.2;
+        min_size = 5; % TODO: adjust
+        do_watershed = 1;
 
-    elseif strcmp(antibody_type,'GFAP')
-        pixel_thresh = 0.5;
+    elseif strcmp(antibody_type,'gfap')
+        pixel_thresh = 0.4;
+        min_size = 5; % TODO: adjust
+        do_watershed = 0;
 
-    elseif strcmp(antibody_type,'Iba1')
-        pixel_thresh = 0.35;
+    elseif strcmp(antibody_type,'iba1')
+        pixel_thresh = 0.65;
+        min_size = 5;
+        do_watershed = 0;
+
     end
-    
 end
