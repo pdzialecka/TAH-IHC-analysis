@@ -25,7 +25,7 @@ summarise = 0;
 % magnification = 20;
 roi_size_um = [500,500]; % 400 x 400 um
 all_image_types = {'moc23','12f4','ct695','iba1','gfap','cfos','ki67'};
-image_type = 'gfap'; % specific analysis
+image_type = 'moc23'; % specific analysis
 
 %% Cohort case
 cohort_case = 2; % 1 = 13mo (cohort 1), 2 = 6mo (cohorts 2-5)
@@ -39,7 +39,7 @@ end
 
 
 %% Within animal analysis inside cohort folders
-for cohort_idx = 4 % 1:length(cohort_folders)
+for cohort_idx = 1:length(cohort_folders)
     
     %% File directories
     cohort_folder = cohort_folders{cohort_idx};

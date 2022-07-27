@@ -51,10 +51,10 @@ function [] = save_cohort_info(results_folder)
     cohort.cohort_id = 4;
     cohort.cohort_age = 6;
     cohort.conds = {'Sham','40 Hz','8 Hz','LTD'};
-    cohort.mouse_ids = [];
+    cohort.mouse_ids = [41,45,42,46,43,44];
     cohort.mouse_names = mouse_ids_to_names(cohort.mouse_ids);
-    cohort.mouse_sex = {};
-    cohort.mouse_cond_idxs = [];
+    cohort.mouse_sex = {'F','M','F','M','F','F'};
+    cohort.mouse_cond_idxs = [2,4,4,4,4,2];
     cohort.mouse_conds = mouse_ids_to_conds(cohort.mouse_cond_idxs);
     save(fullfile(cohort_info_folder,'cohort_4_info.mat'),'cohort');
     
@@ -63,10 +63,10 @@ function [] = save_cohort_info(results_folder)
     cohort.cohort_id = 5;
     cohort.cohort_age = 6;
     cohort.conds = {'Sham','40 Hz','8 Hz','LTD'};
-    cohort.mouse_ids = [];
+    cohort.mouse_ids = [47,50,48,51,49,52];
     cohort.mouse_names = mouse_ids_to_names(cohort.mouse_ids);
-    cohort.mouse_sex = {};
-    cohort.mouse_cond_idxs = [];
+    cohort.mouse_sex = {'F','F','F','F','F','F'};
+    cohort.mouse_cond_idxs = [1,3,4,1,4,1];
     cohort.mouse_conds = mouse_ids_to_conds(cohort.mouse_cond_idxs);
     save(fullfile(cohort_info_folder,'cohort_5_info.mat'),'cohort');
 
