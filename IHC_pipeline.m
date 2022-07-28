@@ -24,8 +24,8 @@ summarise = 0;
 %% Analysis settings
 % magnification = 20;
 roi_size_um = [500,500]; % 400 x 400 um
-all_image_types = {'moc23','12f4','ct695','iba1','gfap','cfos','ki67'};
-image_type = 'moc23'; % specific analysis
+all_img_types = {'moc23','12f4','ct695','iba1','gfap','cfos','ki67'};
+img_type = 'moc23'; % specific analysis
 
 %% Cohort case
 cohort_case = 2; % 1 = 13mo (cohort 1), 2 = 6mo (cohorts 2-5)
@@ -66,15 +66,35 @@ for cohort_idx = 1:length(cohort_folders)
             if analyse_all
                 files = dir(fullfile(processed_folder,'**',strcat('*deconv.tif')));
             else
-                files = dir(fullfile(processed_folder,'**',strcat('*',image_type,'*deconv.tif')));
+                files = dir(fullfile(processed_folder,'**',strcat('*',img_type,'*deconv.tif')));
             end
-
+            
+            
 %             files = files(1); % test file
 
             for idx = 1:length(files)
                 file_ = files(idx);
                 select_roi(file_,roi_size_um);
             end
+            
+            
+            % or select all ROIs per mouse
+            mouse_pfolders = dir(processed_folder);
+            mouse_pfolders(ismember({mouse_pfolders.name}, {'.', '..'})) = [];
+            
+            for m_idx = 1:length(mouse_pfolders)
+                mouse_pfolder = fullfile(mouse_pfolders(m_idx).folder,mouse_pfolders(m_idx).name);
+                files = dir(fullfile(mouse_pfolder,'**',strcat('*deconv.tif')));
+                
+                % rearrange files so moc23 is first
+                files = rearrange_files(files,all_img_types);
+                
+                for idx = 1:length(files)
+                    file_ = files(idx);
+                    select_roi(file_,roi_size_um);
+                end
+            end
+            
         end
 
         %% Analyse all data or that from one antibody only
@@ -85,7 +105,7 @@ for cohort_idx = 1:length(cohort_folders)
                 files = dir(fullfile(processed_folder,'**',strcat('*deconv.tif')));
 %                 files = dir(fullfile(roi_images_folder,'**','*.tif'));
             else
-                files = dir(fullfile(processed_folder,'**',strcat('*',image_type,'*deconv.tif')));
+                files = dir(fullfile(processed_folder,'**',strcat('*',img_type,'*deconv.tif')));
 %                 files = dir(fullfile(roi_images_folder,'**',strcat('*',image_type,'*.tif')));
             end
 
@@ -106,12 +126,12 @@ if summarise
     save_cohort_info(results_folder);
 
     if analyse_all
-        for i = 1:length(all_image_types)
-            image_type_i = all_image_types{i};
+        for i = 1:length(all_img_types)
+            image_type_i = all_img_types{i};
             summarise_results(base_folder,cohort_case,image_type_i);
         end
 
     else
-        summarise_results(base_folder,cohort_case,image_type);
+        summarise_results(base_folder,cohort_case,img_type);
     end
 end

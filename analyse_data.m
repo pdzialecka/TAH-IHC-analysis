@@ -43,8 +43,9 @@ function [] = analyse_data(files,load_rois,close_figs)
 %         end
 
         %% Image type: threshold + min particle size
-        idxs_ = strfind(file,'_');
-        image_type = file(idxs_(1)+1:idxs_(2)-1);
+%         idxs_ = strfind(file,'_');
+%         image_type = file(idxs_(1)+1:idxs_(2)-1);
+        img_type = find_img_type(file);
         
 %         if contains(file,'moc23')
 %             image_type = 'moc23';
@@ -60,7 +61,7 @@ function [] = analyse_data(files,load_rois,close_figs)
 %             image_type = 'Iba1';
 %         end
         
-        [pixel_thresh,min_size,do_watershed] = get_antibody_threshold(image_type);
+        [pixel_thresh,min_size,do_watershed] = get_antibody_threshold(img_type);
         
     
         %% Results folder
@@ -234,7 +235,7 @@ function [] = analyse_data(files,load_rois,close_figs)
             
             min_con_pixels = 20; % max ~10 um long
 %             min_con_pixels = min_pix_area;
-            connectivity = 4; % default: 4
+            connectivity = 8; % default: 4
             dab_roi_mask_f = bwareaopen(dab_roi_mask,min_con_pixels,connectivity);
             dab_image_mask_f = labeloverlay(dab_image_,dab_roi_mask_f,...
                 'Colormap',color_map,'Transparency',transparency);

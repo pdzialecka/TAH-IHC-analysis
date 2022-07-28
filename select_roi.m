@@ -11,9 +11,8 @@ function [rois_x,rois_y] = select_roi(file_,roi_size_um)
 %     end
     
     if ~exist('roi_size','var')
-        roi_size_um = [400,400]; % in um
+        roi_size_um = [500,500]; % in um
     end
-    
     
     %%
     pixel_size = 0.504; % um
@@ -67,11 +66,16 @@ function [rois_x,rois_y] = select_roi(file_,roi_size_um)
     
     %%
     if ~all_rois_exist
+        
         %% Load deconvolved images
         file_path = fullfile(folder,file);
         [h_image,dab_image,res_image] = load_deconvolved_images(file_path,1);
         
 %         tiff_file = Tiff(file_path);
+
+        %% Find DG regions for each image
+        [dg_regions,dg_centroids,offset] = find_dg_regions(h_image,file_);
+        auto_find_rois = any(offset~=0,[1,2]);
 
         %%
         for roi_idx = 1:roi_no
@@ -91,13 +95,15 @@ function [rois_x,rois_y] = select_roi(file_,roi_size_um)
                 %%
 %                 roi_size = round(size(dab_image)/magnification);
                 roi_accepted = 0;
+                use_auto_roi = 1;
 
                 while ~roi_accepted
                     %% Select ROI on H image
                     fig1 = figure('units','normalized','outerposition',[0 0 1 1]);
                     imshow(h_image),colormap(h_colormap)
 
-                    title(sprintf('Select %s ROI',roi_names{roi_idx})) 
+                    title(sprintf('Select %s ROI',roi_names{roi_idx}))
+                    
 
                     % roi = drawrectangle();
                     % 
@@ -105,7 +111,26 @@ function [rois_x,rois_y] = select_roi(file_,roi_size_um)
                     % roi_x = roi.Position(2):roi.Position(2)+roi.Position(4);
                     % roi_y = roi.Position(1):roi.Position(1)+roi.Position(3);
 
-                    roi_point = drawpoint();
+%                     roi_point = drawpoint();
+                    
+                    if auto_find_rois && use_auto_roi
+                        base_roi_file = dir(fullfile(roi_folder,strcat('*moc23*',roi_fnames{roi_idx},'*.mat')));
+                        base_roi = load(fullfile(base_roi_file(1).folder,base_roi_file(1).name)).roi;
+                        
+                        if contains(fname,'L')
+                            offset_ = offset(1,:);
+                        elseif contains(fname,'R')
+                            offset_ = offset(2,:);
+                        end
+                        
+                        % TODO: check direction and order
+                        roi_x_point = (base_roi.x(1)+offset_(1))+roi_size(1)/2;
+                        roi_y_point = (base_roi.y(1)+offset_(2))+roi_size(2)/2;
+                        roi_point = drawpoint('Position',[roi_y_point,roi_x_point]);
+                        
+                    else
+                        roi_point = drawpoint();
+                    end
 
                     %% Display ROI on DAB image
                     roi_point.Position = round(roi_point.Position);
@@ -148,6 +173,7 @@ function [rois_x,rois_y] = select_roi(file_,roi_size_um)
 
                         case 'No'
                             roi_accepted = 0;
+                            use_auto_roi = 0;
                             close(fig1);
                             close(fig2);
                             close(fig3);
