@@ -24,7 +24,6 @@ function [rois_x,rois_y] = select_roi(file_,roi_size_um)
     % arbitrary roi size in um
     roi_size = round(roi_size_um/pixel_size);
     
-    
     %% H DAB colormaps
     % for easier visualisation
     [h_colormap,dab_colormap] = create_hdab_colormaps();
@@ -123,37 +122,36 @@ function [rois_x,rois_y] = select_roi(file_,roi_size_um)
                             offset_ = offset(2,:);
                         end
                         
-                        % TODO: check direction and order
                         roi_x_point = (base_roi.x(1)+offset_(1))+roi_size(1)/2;
                         roi_y_point = (base_roi.y(1)+offset_(2))+roi_size(2)/2;
-                        roi_point = drawpoint('Position',[roi_y_point,roi_x_point]);
+                        roi_point = drawpoint('Position',[roi_x_point,roi_y_point]);
                         fprintf('Estimating %s ROI location\n',fname)
                         
                     else
                         roi_point = drawpoint();
                     end
 
-                    %% Display ROI on DAB image
+                    %%
                     roi_point.Position = round(roi_point.Position);
-                    roi_x_1 = round(roi_point.Position(2)-roi_size(1)/2);
-                    roi_y_1 = round(roi_point.Position(1)-roi_size(2)/2);
+                    roi_x_1 = round(roi_point.Position(1)-roi_size(1)/2);
+                    roi_y_1 = round(roi_point.Position(2)-roi_size(2)/2);
 
                     roi_x = roi_x_1:roi_x_1+roi_size(1);
                     roi_y = roi_y_1:roi_y_1+roi_size(2);
 
-                    roi_rect = drawrectangle('Position',[roi_y_1,roi_x_1,roi_size(2),roi_size(1)]);
+                    roi_rect = drawrectangle('Position',[roi_x_1,roi_y_1,roi_size(1),roi_size(2)]);
                     title(sprintf('%s ROI',roi_names{roi_idx}));
                     
                     %% Diplay ROI on DAB image
                     fig2 = figure('units','normalized','outerposition',[0 0 1 1]);
                     imshow(dab_image),colormap(dab_colormap)
-                    roi_rect = drawrectangle('Position',[roi_y_1,roi_x_1,roi_size(2),roi_size(1)]);
+                    roi_rect = drawrectangle('Position',[roi_x_1,roi_y_1,roi_size(1),roi_size(2)]);
                     title(sprintf('%s ROI',roi_names{roi_idx}));
 
                     %% Display zoomed in ROI selected
-                    h_image_roi = h_image(roi_x,roi_y);
-                    dab_image_roi = dab_image(roi_x,roi_y);
-                    res_image_roi = res_image(roi_x,roi_y);
+                    h_image_roi = h_image(roi_y,roi_x);
+                    dab_image_roi = dab_image(roi_y,roi_x);
+                    res_image_roi = res_image(roi_y,roi_x);
 
                     fig3 = figure('units','normalized','outerposition',[0 0 1 1]);
                     ax(1) = subplot(121); imshow(h_image_roi)
@@ -171,10 +169,17 @@ function [rois_x,rois_y] = select_roi(file_,roi_size_um)
                             roi_accepted = 1;
                             rois_x{roi_idx} = roi_x;
                             rois_y{roi_idx} = roi_y;
-
+                            
+                            if auto_find_rois && use_auto_roi
+                                fprintf('Auto ROI accepted\n')
+                            end
+                            
                         case 'No'
                             roi_accepted = 0;
                             use_auto_roi = 0;
+                            if auto_find_rois && use_auto_roi
+                                fprintf('Auto ROI rejected; selecting ROI manually\n')
+                            end
                             close(fig1);
                             close(fig2);
                             close(fig3);
@@ -192,7 +197,7 @@ function [rois_x,rois_y] = select_roi(file_,roi_size_um)
                         saveas(fig2,fullfile(roi_folder,fname2));
 
 %                         fname3 = strcat(fname,'_3_H_DAB_',num2str(magnification),'x.tif');
-                        fname3 = strcat(fname,'_3_H_DAB_',num2str(roi_size(1)),'_x_',num2str(roi_size(2)),'.tif');
+                        fname3 = strcat(fname,'_3_H_DAB_',num2str(roi_size_um(1)),'x',num2str(roi_size_um(2)),'um.tif');
                         saveas(fig3,fullfile(roi_folder,fname3));
 
                         close(fig1);
@@ -205,6 +210,7 @@ function [rois_x,rois_y] = select_roi(file_,roi_size_um)
                         roi.fname = roi_fnames{roi_idx};
 %                         roi.magnification = magnification;
                         roi.size = roi_size;
+                        roi.size_um = roi_size_um;
                         roi.x = roi_x;
                         roi.y = roi_y;
                         roi.auto_roi = auto_find_rois & use_auto_roi;

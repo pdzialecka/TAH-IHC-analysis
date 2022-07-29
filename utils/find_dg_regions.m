@@ -135,11 +135,22 @@ function [dg_regions,dg_centroids,offset] = find_dg_regions(h_image,file_)
     imshow(I3),hold on
 
     for idx = 1:2
-        col = 'b';
         h = rectangle('Position',dg_regions(idx).BoundingBox);
-        set(h,'EdgeColor',col,'LineWidth',1);
-        plot(dg_centroids(idx,1),dg_centroids(idx,2),'r.')
+        set(h,'EdgeColor','r','LineWidth',1.5);
+        plot(dg_centroids(idx,1),dg_centroids(idx,2),'r.',...
+            'MarkerSize',10)
         1;
+    end
+    
+    if base_compare
+        for idx = 1:2
+            h = rectangle('Position',base_dg.dg_regions(idx).BoundingBox,...
+                'LineStyle',':');
+            set(h,'EdgeColor','g','LineWidth',1.25);
+            plot(base_dg_centroids(idx,1),base_dg_centroids(idx,2),'g.',...
+                'MarkerSize',10)
+            1;
+        end
     end
     
     fname = strcat(file(1:end-11),'_dg_regions.tif');
@@ -148,7 +159,7 @@ function [dg_regions,dg_centroids,offset] = find_dg_regions(h_image,file_)
     
     %% Calculate offset
     if base_compare
-        offset = base_dg_centroids - dg_centroids;
+        offset = dg_centroids - base_dg_centroids;
     else
         offset = [0 0; 0 0];
     end
