@@ -18,7 +18,7 @@ base_folder = 'C:\Users\Pat\Desktop\TAH';
 deconvolve = 0;
 select_rois = 0;
 analyse = 1;
-analyse_all = 0;
+analyse_all = 1;
 summarise = 0;
 
 %% Analysis settings
@@ -63,19 +63,19 @@ for cohort_idx = 1:length(cohort_folders)
         %% Pre-select all ROIs
         if select_rois
 
-            if analyse_all
-                files = dir(fullfile(processed_folder,'**',strcat('*deconv.tif')));
-            else
-                files = dir(fullfile(processed_folder,'**',strcat('*',img_type,'*deconv.tif')));
-            end
-            
-            
-%             files = files(1); % test file
-
-            for idx = 1:length(files)
-                file_ = files(idx);
-                select_roi(file_,roi_size_um);
-            end
+%             if analyse_all
+%                 files = dir(fullfile(processed_folder,'**',strcat('*deconv.tif')));
+%             else
+%                 files = dir(fullfile(processed_folder,'**',strcat('*',img_type,'*deconv.tif')));
+%             end
+%             
+%             
+% %             files = files(1); % test file
+% 
+%             for idx = 1:length(files)
+%                 file_ = files(idx);
+%                 select_roi(file_,roi_size_um);
+%             end
             
             
             % or select all ROIs per mouse

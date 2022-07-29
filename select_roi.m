@@ -127,6 +127,7 @@ function [rois_x,rois_y] = select_roi(file_,roi_size_um)
                         roi_x_point = (base_roi.x(1)+offset_(1))+roi_size(1)/2;
                         roi_y_point = (base_roi.y(1)+offset_(2))+roi_size(2)/2;
                         roi_point = drawpoint('Position',[roi_y_point,roi_x_point]);
+                        fprintf('Estimating %s ROI location\n',fname)
                         
                     else
                         roi_point = drawpoint();
@@ -206,6 +207,7 @@ function [rois_x,rois_y] = select_roi(file_,roi_size_um)
                         roi.size = roi_size;
                         roi.x = roi_x;
                         roi.y = roi_y;
+                        roi.auto_roi = auto_find_rois & use_auto_roi;
 
                         save(roi_fname,'roi');
                         fprintf('ROI %s saved\n',fname);
