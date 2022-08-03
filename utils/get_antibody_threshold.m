@@ -32,7 +32,7 @@ function [pixel_thresh,min_size,do_watershed] = get_antibody_threshold(antibody_
         do_watershed = 1;
 
     elseif strcmp(antibody_type,'gfap')
-        pixel_thresh = 0.4;
+        pixel_thresh = 0.3;
         min_size = 5; % TODO: adjust
         do_watershed = 0;
 

@@ -332,7 +332,7 @@ function [] = analyse_data(files,load_rois,close_figs)
             
             %% Count number of cells
             % remove line artefacts (eccentricity ~= 1)
-            max_eccentricity = 0.98;
+            max_eccentricity = 0.99;
             
             % remove cells smaller than x um diameter
             min_length = (min_size/pixel_size);
