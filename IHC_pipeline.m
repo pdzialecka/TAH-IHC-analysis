@@ -18,7 +18,7 @@ base_folder = 'C:\Users\Pat\Desktop\TAH';
 deconvolve = 0;
 select_rois = 0;
 analyse = 1;
-analyse_all = 1;
+analyse_all = 0;
 summarise = 0;
 
 %% Analysis settings
