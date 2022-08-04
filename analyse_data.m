@@ -80,6 +80,8 @@ function [] = analyse_data(files,load_rois,close_figs)
 %         [h_image,dab_image] = load_deconvolved_images(file_path);
         
         %% Find ROIs
+        % TODO: change only to detect roi img files. no longer needed to
+        % load setts
         roi_not_found = 0;
 
         for roi_idx = 1:roi_no
@@ -182,7 +184,36 @@ function [] = analyse_data(files,load_rois,close_figs)
                 dab_image_ = dab_image_f;
                 h_image_ = h_image_f;
             end
+            
+            %%
+            if 0 & strcmp(img_type,'cfos')
+                
+%                 h_imadjust = imadjust(h_image_); % cleanest
+%                 h_histeq = histeq(h_image_); % v dark
+%                 h_adapthisteq = adapthisteq(h_image_); % pyr layer best?
+%                 
+%                 h_image_2 = h_histeq;
+                figure,imshow(h_image_),colormap(h_colormap)
+                
+                cell_thresh = 0.8; % 0.8 on reg image? 0.4-0.5 otherwise. 0.1 histeq
+                h_cell_mask = ~imbinarize(h_image_,cell_thresh);
+                figure,imshow(h_cell_mask)
+                
+                % clean the mask from noise & may be ok?
+                pixel_size = 0.504;
+                min_d = 5;
+                min_pix_area = round((pi*((min_d/2)/pixel_size)^2));
 
+                min_con_pixels = min_pix_area; % 20: max ~10 um long
+    %             min_con_pixels = min_pix_area;
+                connectivity = 8; % default: 4
+                h_cell_mask_f = bwareaopen(h_cell_mask,min_con_pixels,connectivity);
+                h_image_mask_f = labeloverlay(h_image_,h_cell_mask_f,...
+                    'Colormap',color_map,'Transparency',transparency);
+                figure,imshow(h_image_mask_f)
+                
+            end
+            
             %% Threshold
             % white background: 255
             % areas of interest: lower pixel values
