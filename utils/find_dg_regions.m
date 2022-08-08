@@ -211,10 +211,12 @@ function [dg_regions,dg_centroids,offset] = find_dg_regions(h_image,file_)
 
     h_image_rot = imwarp(h_image,tform,'interp','cubic','FillValues',255);    
     figure,imshow(h_image_rot)
-    
+        
     roi_mask_rot = imwarp(roi_mask,tform,'interp','cubic','FillValues',0);
     figure,imshow(roi_mask_rot)
     
+    slice_mask_rot = imwarp(slice_mask,tform,'interp','cubic','FillValues',0);
+
     [x,y] = transformPointsForward(tform,mid_point(1),mid_point(2));
     mid_point_rot = round([x,y]);
     mid_x = mid_point_rot(1);
@@ -232,9 +234,12 @@ function [dg_regions,dg_centroids,offset] = find_dg_regions(h_image,file_)
     else % left side too large
         h_image_rot = h_image_rot(:,abs(offset_size)+1:end);
         roi_mask_rot = roi_mask_rot(:,abs(offset_size)+1:end);
-        mid_point_rot(1) = mid_x-offset_size;
+        mid_x = mid_x-offset_size;
+        mid_point_rot(1) = mid_x;
     end
     
+    figure,imshow(roi_mask_rot)
+    xline(mid_x,'g')
     
     %%
 %                     BWoutline = bwperim(slice_mask);
@@ -328,6 +333,70 @@ function [dg_regions,dg_centroids,offset] = find_dg_regions(h_image,file_)
     saveas(fig1,fullfile(roi_folder,fname));
     close(fig1);
     
+    %%
+%     figure,imshow(slice_mask_rot)
+%     slice_region = regionprops(slice_mask_rot,'Area','Centroid',...
+%         'BoundingBox','Circularity','Eccentricity',...
+%         'MajorAxisLength','MinorAxisLength','ConvexArea');
+%     h = rectangle('Position',slice_region(1).BoundingBox,...
+%                 'LineStyle',':');
+%     set(h,'EdgeColor','g','LineWidth',1.25);
+    
+    %% Find all ROIs
+%     dg_x_start = dg_regions(1).BoundingBox(1);
+%     dg_y_start = dg_regions(1).BoundingBox(2);
+%     dg_w = dg_regions(1).BoundingBox(3);
+%     dg_h = dg_regions(1).BoundingBox(4);
+    
+    dg_dims = round([1300,600]/pixel_size); % in um
+    dg_centroid_L = dg_centroids(1,:);
+    dg_centroid_R = dg_centroids(2,:);
+
+    % coordinates
+    % start = upper left corner on the pic
+    dg_start_L = [dg_centroid_L(1)-dg_dims(1)/2 dg_centroid_L(2)-dg_dims(2)/2];
+    coords_dg_L = [dg_start_L(1) dg_start_L(2) dg_dims(1) dg_dims(2)];
+    
+    dg_start_R = [dg_centroid_R(1)-dg_dims(1)/2 dg_centroid_R(2)-dg_dims(2)/2];
+    coords_dg_R = [dg_start_R(1) dg_start_R(2) dg_dims(1) dg_dims(2)];
+    
+    % ca1 x higher than dg
+    ca1_dims = round([1300,500]/pixel_size);
+    h_above_dg = round(100/pixel_size);
+    coords_ca1_L = [dg_start_L(1) dg_start_L(2)-ca1_dims(2)-h_above_dg ca1_dims(1) ca1_dims(2)];
+    coords_ca1_R = [dg_start_R(1) dg_start_R(2)-ca1_dims(2)-h_above_dg ca1_dims(1) ca1_dims(2)];
+    
+    % cortex x higher than ca1
+    cortex_dims = round([1300,700]/pixel_size);
+    h_above_ca1 = round(100/pixel_size);
+    coords_cortex_L = [coords_ca1_L(1) coords_ca1_L(2)-cortex_dims(2)-h_above_ca1 cortex_dims(1) cortex_dims(2)];
+    coords_cortex_R = [coords_ca1_R(1) coords_ca1_R(2)-cortex_dims(2)-h_above_ca1 cortex_dims(1) cortex_dims(2)];
+
+    % ca3? tricky as varies between images
+    ca3_dims = round([750,800]/pixel_size);
+    w_from_dg = round(100/pixel_size);
+    
+    % OPTION 1: includes ca2
+    coords_ca3_L = [dg_start_L(1)-ca3_dims(1)-w_from_dg dg_start_L(2) ca3_dims(1) ca3_dims(2)];
+    coords_ca3_R = [dg_start_R(1)+dg_dims(1)+w_from_dg dg_start_R(2) ca3_dims(1) ca3_dims(2)];
+    
+    % OPTION 2: height only up to dg centroid
+    ca3_dims = round([750,500]/pixel_size);
+    coords_ca3_L = [dg_start_L(1)-ca3_dims(1)-w_from_dg dg_centroid_L(2) ca3_dims(1) ca3_dims(2)];
+    coords_ca3_R = [dg_start_R(1)+dg_dims(1)+w_from_dg dg_centroid_R(2) ca3_dims(1) ca3_dims(2)];
+
+
+    fig2 = plot_regions(h_image_rot,dg_regions);colormap(h_colormap)
+    dg_roi_L = drawrectangle('Position',coords_dg_L,'Color','g');
+    ca1_roi_L = drawrectangle('Position',coords_ca1_L,'Color','m');
+    cortex_roi_L = drawrectangle('Position',coords_cortex_L,'Color','y');
+    ca3_roi_L = drawrectangle('Position',coords_ca3_L,'Color','b');
+
+    dg_roi_R = drawrectangle('Position',coords_dg_R,'Color','g');
+    ca1_roi_R = drawrectangle('Position',coords_ca1_R,'Color','m');
+    cortex_roi_R = drawrectangle('Position',coords_cortex_R,'Color','y');
+    ca3_roi_R = drawrectangle('Position',coords_ca3_R,'Color','b');
+
     %% Calculate offset
     if base_compare
         offset = dg_centroids - base_dg_centroids;

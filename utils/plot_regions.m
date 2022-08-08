@@ -1,4 +1,4 @@
-function [fig] = plot_regions(roi_mask,regions)
+function [fig] = plot_regions(image,regions)
     %%
     % @author: pdzialecka
     
@@ -6,7 +6,7 @@ function [fig] = plot_regions(roi_mask,regions)
     centroids = round(cat(1,regions.Centroid));
     
     fig = figure('units','normalized','outerposition',[0 0 1 1]);
-    imshow(roi_mask),hold on
+    imshow(image),hold on
 
     for idx = 1:length(regions)
         h = rectangle('Position',regions(idx).BoundingBox);
