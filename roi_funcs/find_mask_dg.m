@@ -1,4 +1,4 @@
-function [dg_regions,dg_centroids,regions] = find_dg_mask(I_mask)
+function [dg_regions,dg_centroids,regions] = find_mask_dg(I_mask)
     %% Find dendate gyri within regions of a binary mask
     % @author: pdzialecka
     

@@ -73,7 +73,7 @@ function [rois_x,rois_y] = select_roi(file_,roi_size_um)
 %         tiff_file = Tiff(file_path);
 
         %% Find DG regions for each image
-        [dg_regions,dg_centroids,offset] = find_dg_regions(h_image,file_);
+        [dg_regions,dg_centroids,offset] = find_regions(h_image,file_,0);
         auto_find_rois = any(offset~=0,[1,2]);
 
         %%

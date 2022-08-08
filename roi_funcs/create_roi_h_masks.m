@@ -14,8 +14,8 @@ function [roi_mask,slice_mask] = create_roi_h_masks(h_image)
         kernel1 = 1/(k1*k1)*ones([k1,k1]);
         h_image_ = imfilter(h_image,kernel1);
 
-%                         h_imadjust = imadjust(h_image_);
-%                         h_histeq = histeq(h_image_);
+%         h_imadjust = imadjust(h_image_);
+%         h_histeq = histeq(h_image_);
         h_adapthisteq = adapthisteq(h_image_);
 
         h_image_ = h_adapthisteq;
@@ -23,10 +23,23 @@ function [roi_mask,slice_mask] = create_roi_h_masks(h_image)
             figure,imshow(h_image_)
         end
     end
+    
+    %% Smooth the image so mask less granulated
+%     k2 = 50;
+%     kernel2 = 1/(k2*k2)*ones([k2,k2]);
+%     h_image_2 = imfilter(h_image_,kernel2);
+%     if show_figs
+%         figure,imshow(h_image_2)
+%     end
+%     
+% %     h_image_2 = imgaussfilt(h_image_,20);
+% %     figure,imshow(h_image_2)
+%     
+%     h_image_ = h_image_2;
 
     %% Create binary dab image
     if enhance_contrast
-        thresh = (0.7*mean(mean(h_image_))); % 150;
+        thresh = (0.75*mean(mean(h_image_))); % 150;
     else
         thresh = 200; % (0.9*mean(mean(h_image_)));
     end
