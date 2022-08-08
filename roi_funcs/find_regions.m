@@ -1,4 +1,4 @@
-function [dg_regions,dg_centroids,offset] = find_regions(h_image,file_,...
+function [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file_,...
     find_all_rois)
 
     %% Find regions in each image: DG and (optional) all other ROIs
@@ -14,14 +14,18 @@ function [dg_regions,dg_centroids,offset] = find_regions(h_image,file_,...
     end
     
     %%
-    pixel_size = 0.504;
+%     pixel_size = 0.504;
+    [h_colormap,dab_colormap] = create_hdab_colormaps();
     theta = 0;
+    rois = {};
     
     if find_all_rois
         rotate_slice = 1;
     else
         rotate_slice = 0;
     end
+    
+    show_figs = 0;
 
     %%
     file = file_.name;
@@ -113,11 +117,14 @@ function [dg_regions,dg_centroids,offset] = find_regions(h_image,file_,...
     %% Find initial DG regions    
     if rotate_slice
         [dg_regions,dg_centroids] = find_mask_dg(roi_mask);
-        fig = plot_regions(roi_mask,dg_regions);
-
+        if show_figs
+            fig = plot_regions(roi_mask,dg_regions);
+        end
+        
         %% Find angle based on dg
-        dg_dist = dg_centroids(2,:)-dg_centroids(1,:);
-        mid_point = dg_centroids(1,:)+dg_dist/2;
+        mid_point = find_dg_mid_point(dg_centroids);
+%         dg_dist = dg_centroids(2,:)-dg_centroids(1,:);
+%         mid_point = dg_centroids(1,:)+dg_dist/2;
 
         plot(mid_point(1),mid_point(2),'g.',...
             'MarkerSize',10)
@@ -137,18 +144,25 @@ function [dg_regions,dg_centroids,offset] = find_regions(h_image,file_,...
             -sind(theta),cosd(theta);];
         tform = rigid2d(rot,trans);
 
+        %%
         h_image_rot = imwarp(h_image,tform,'interp','cubic','FillValues',255);    
         figure,imshow(h_image_rot)
 
         roi_mask_rot = imwarp(roi_mask,tform,'interp','cubic','FillValues',0);
-        figure,imshow(roi_mask_rot)
 
         slice_mask_rot = imwarp(slice_mask,tform,'interp','cubic','FillValues',0);
 
-        [x,y] = transformPointsForward(tform,mid_point(1),mid_point(2));
-        mid_point_rot = round([x,y]);
+        % didn't work in some cases - not sure why
+%         [x,y] = transformPointsForward(tform,mid_point(1),mid_point(2));
+%         mid_point_rot = round([x,y]);
+
+        [dg_regions_rot,dg_centroids_rot] = find_mask_dg(roi_mask_rot);
+        mid_point_rot = find_dg_mid_point(dg_centroids_rot);
         mid_x = mid_point_rot(1);
 
+        figure,imshow(roi_mask_rot),hold on
+        plot(mid_point_rot(1),mid_point_rot(2),'g.',...
+            'MarkerSize',10)
         xline(mid_x,'g')
 
         %% Offset image so midline in the middle
@@ -206,53 +220,101 @@ function [dg_regions,dg_centroids,offset] = find_regions(h_image,file_,...
     
     %% Find all ROIs
     if find_all_rois
-        dg_dims = round([1300,600]/pixel_size); % in um
+        dg_dims_um = [1300,600];
+        dg_dims = um_to_pixel(dg_dims_um);
         dg_centroid_L = dg_centroids(1,:);
         dg_centroid_R = dg_centroids(2,:);
 
         % coordinates. start = upper left corner on the pic
-        dg_start_L = [dg_centroid_L(1)-dg_dims(1)/2 dg_centroid_L(2)-dg_dims(2)/2];
+        dg_start_L = round([dg_centroid_L(1)-dg_dims(1)/2 dg_centroid_L(2)-dg_dims(2)/2]);
         dg_L_coords = [dg_start_L(1) dg_start_L(2) dg_dims(1) dg_dims(2)];
 
-        dg_start_R = [dg_centroid_R(1)-dg_dims(1)/2 dg_centroid_R(2)-dg_dims(2)/2];
+        dg_start_R = round([dg_centroid_R(1)-dg_dims(1)/2 dg_centroid_R(2)-dg_dims(2)/2]);
         dg_R_coords = [dg_start_R(1) dg_start_R(2) dg_dims(1) dg_dims(2)];
 
         % ca1 100um higher than dg
-        ca1_dims = round([1300,500]/pixel_size);
-        ca1_dg_h = round(100/pixel_size);
+        ca1_dims_um = [1300,500];
+        ca1_dims = um_to_pixel(ca1_dims_um);
+        ca1_dg_h_um = 100;
+        ca1_dg_h = um_to_pixel(ca1_dg_h_um);
         ca1_L_coords = [dg_start_L(1) dg_start_L(2)-ca1_dims(2)-ca1_dg_h ca1_dims(1) ca1_dims(2)];
         ca1_R_coords = [dg_start_R(1) dg_start_R(2)-ca1_dims(2)-ca1_dg_h ca1_dims(1) ca1_dims(2)];
 
         % cortex 100um higher than ca1
-        cortex_dims = round([1300,700]/pixel_size);
-        cortex_ca1_h = round(100/pixel_size);
+        cortex_dims_um = [1300,700];
+        cortex_dims = um_to_pixel(cortex_dims_um);
+        cortex_ca1_h_um = 100;
+        cortex_ca1_h = um_to_pixel(cortex_ca1_h_um);
         cortex_L_coords = [ca1_L_coords(1) ca1_L_coords(2)-cortex_dims(2)-cortex_ca1_h cortex_dims(1) cortex_dims(2)];
         cortex_R_coords = [ca1_R_coords(1) ca1_R_coords(2)-cortex_dims(2)-cortex_ca1_h cortex_dims(1) cortex_dims(2)];
 
         % ca3 is tricky, varies between images
-        ca3_dims = round([750,800]/pixel_size);
-        ca3_dg_w = round(100/pixel_size);
+        ca3_dg_w_um = 100;
+        ca3_dg_w = um_to_pixel(ca3_dg_w_um);
 
         % OPTION 1: includes ca2
-%         coords_ca3_L = [dg_start_L(1)-ca3_dims(1)-w_from_dg dg_start_L(2) ca3_dims(1) ca3_dims(2)];
-%         coords_ca3_R = [dg_start_R(1)+dg_dims(1)+w_from_dg dg_start_R(2) ca3_dims(1) ca3_dims(2)];
+        ca3_dims_um = [750,800];
+        ca3_dims = um_to_pixel(ca3_dims_um);
+        ca3_L_coords = [dg_start_L(1)-ca3_dims(1)-ca3_dg_w dg_start_L(2) ca3_dims(1) ca3_dims(2)];
+        ca3_R_coords = [dg_start_R(1)+dg_dims(1)+ca3_dg_w dg_start_R(2) ca3_dims(1) ca3_dims(2)];
 
-        % OPTION 2: height only up to dg centroid
-        ca3_dims = round([750,500]/pixel_size);
-        coords_ca3_L = [dg_start_L(1)-ca3_dims(1)-ca3_dg_w dg_centroid_L(2) ca3_dims(1) ca3_dims(2)];
-        coords_ca3_R = [dg_start_R(1)+dg_dims(1)+ca3_dg_w dg_centroid_R(2) ca3_dims(1) ca3_dims(2)];
+        % OPTION 2: height only up to dg centroid. may be not good enough
+%         ca3_dims = round([750,500]/pixel_size);
+%         ca3_L_coords = [dg_start_L(1)-ca3_dims(1)-ca3_dg_w dg_centroid_L(2) ca3_dims(1) ca3_dims(2)];
+%         ca3_R_coords = [dg_start_R(1)+dg_dims(1)+ca3_dg_w dg_centroid_R(2) ca3_dims(1) ca3_dims(2)];
 
 
         fig2 = plot_regions(h_image_rot,dg_regions);colormap(h_colormap)
         dg_L_roi = drawrectangle('Position',dg_L_coords,'Color','g');
         ca1_L_roi = drawrectangle('Position',ca1_L_coords,'Color','m');
         cortex_L_roi = drawrectangle('Position',cortex_L_coords,'Color','y');
-        ca3_L_roi = drawrectangle('Position',coords_ca3_L,'Color','b');
+        ca3_L_roi = drawrectangle('Position',ca3_L_coords,'Color','b');
 
         dg_R_roi = drawrectangle('Position',dg_R_coords,'Color','g');
         ca1_R_roi = drawrectangle('Position',ca1_R_coords,'Color','m');
         cortex_R_roi = drawrectangle('Position',cortex_R_coords,'Color','y');
-        ca3_R_roi = drawrectangle('Position',coords_ca3_R,'Color','b');
+        ca3_R_roi = drawrectangle('Position',ca3_R_coords,'Color','b');
+        
+    
+        %% Store ROIs
+        dg_rois.name = 'DG';
+        dg_rois.dims_um = dg_dims_um;
+        dg_rois.dims = dg_dims;
+        dg_rois.L_coords = dg_L_coords;
+        dg_rois.R_coords = dg_R_coords;
+
+        ca1_rois.name = 'CA1';
+        ca1_rois.dims_um = ca1_dims_um;
+        ca1_rois.dims = ca1_dims;
+        ca1_rois.L_coords = ca1_L_coords;
+        ca1_rois.R_coords = ca1_R_coords;
+        ca1_rois.ca1_dg_h_um = ca1_dg_h_um;
+        ca1_rois.ca1_dg_h = ca1_dg_h;
+
+        ca3_rois.name = 'CA3';
+        ca3_rois.dims_um = ca3_dims_um;
+        ca3_rois.dims = ca3_dims;
+        ca3_rois.L_coords = ca3_L_coords;
+        ca3_rois.R_coords = ca3_R_coords;
+        ca3_rois.ca3_dg_w_um = ca3_dg_w_um;
+        ca3_rois.ca3_dg_w = ca3_dg_w;
+
+        cortex_rois.name = 'Cortex';
+        cortex_rois.dims_um = cortex_dims_um;
+        cortex_rois.dims = cortex_dims;
+        cortex_rois.L_coords = cortex_L_coords;
+        cortex_rois.R_coords = cortex_R_coords;
+        cortex_rois.cortex_ca1_h_um = cortex_ca1_h_um;
+        cortex_rois.cortex_ca1_h = cortex_ca1_h;
+
+
+        rois = {dg_rois,ca1_rois,ca3_rois,cortex_rois};
+        
+        %% Save ROIs found
+        dg_roi_fname = strcat(file(1:end-11),'_auto_rois.mat');
+        save(fullfile(roi_folder,dg_roi_fname),'dg_rois','ca1_rois',...
+            'ca3_rois','cortex_rois');
+
     end
     
 end

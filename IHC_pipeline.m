@@ -92,6 +92,7 @@ for cohort_idx = 1:length(cohort_folders)
                 for idx = 1:length(files)
                     file_ = files(idx);
                     select_roi(file_,roi_size_um);
+%                     select_auto_roi(file_);
                 end
             end
             
