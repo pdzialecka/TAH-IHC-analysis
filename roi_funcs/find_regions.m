@@ -117,17 +117,15 @@ function [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file
     %% Find initial DG regions    
     if rotate_slice
         [dg_regions,dg_centroids] = find_mask_dg(roi_mask);
-        if show_figs
-            fig = plot_regions(roi_mask,dg_regions);
-        end
-        
+
         %% Find angle based on dg
         mid_point = find_dg_mid_point(dg_centroids);
-%         dg_dist = dg_centroids(2,:)-dg_centroids(1,:);
-%         mid_point = dg_centroids(1,:)+dg_dist/2;
-
-        plot(mid_point(1),mid_point(2),'g.',...
-            'MarkerSize',10)
+        
+        if show_figs
+            plot_regions(roi_mask,dg_regions);
+            plot(mid_point(1),mid_point(2),'g.',...
+                'MarkerSize',10)
+        end
 
         x1 = dg_centroids(1,1);
         y1 = dg_centroids(1,2);
@@ -146,10 +144,11 @@ function [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file
 
         %%
         h_image_rot = imwarp(h_image,tform,'interp','cubic','FillValues',255);    
-        figure,imshow(h_image_rot)
-
+        if show_figs
+            figure,imshow(h_image_rot)
+        end
+        
         roi_mask_rot = imwarp(roi_mask,tform,'interp','cubic','FillValues',0);
-
         slice_mask_rot = imwarp(slice_mask,tform,'interp','cubic','FillValues',0);
 
         % didn't work in some cases - not sure why
@@ -160,38 +159,53 @@ function [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file
         mid_point_rot = find_dg_mid_point(dg_centroids_rot);
         mid_x = mid_point_rot(1);
 
-        figure,imshow(roi_mask_rot),hold on
-        plot(mid_point_rot(1),mid_point_rot(2),'g.',...
-            'MarkerSize',10)
-        xline(mid_x,'g')
+        if show_figs
+            figure,imshow(roi_mask_rot),hold on
+            plot(mid_point_rot(1),mid_point_rot(2),'g.',...
+                'MarkerSize',10)
+            xline(mid_x,'g')
+        end
 
         %% Offset image so midline in the middle
         new_size = size(h_image_rot);
-        offset_size = new_size(2)/2-mid_x;
+        mid_offset = new_size(2)/2-mid_x;
 
-        if offset_size > 0 % right side too large
-            h_image_rot = h_image_rot(:,1:end-offset_size);
-            roi_mask_rot = roi_mask_rot(:,1:end-offset_size);
+        if mid_offset > 0 % right side too large
+            h_image_rot = h_image_rot(:,1:end-mid_offset);
+            roi_mask_rot = roi_mask_rot(:,1:end-mid_offset);
 
         else % left side too large
-            h_image_rot = h_image_rot(:,abs(offset_size)+1:end);
-            roi_mask_rot = roi_mask_rot(:,abs(offset_size)+1:end);
-            mid_x = mid_x-offset_size;
+            h_image_rot = h_image_rot(:,abs(mid_offset)+1:end);
+            roi_mask_rot = roi_mask_rot(:,abs(mid_offset)+1:end);
+            mid_x = mid_x-mid_offset;
             mid_point_rot(1) = mid_x;
         end
 
-        figure,imshow(roi_mask_rot)
-        xline(mid_x,'g')
+        %% Final version
+        if show_figs
+            figure,imshow(h_image_rot); hold on
+            colormap(h_colormap)
+            plot(mid_point_rot(1),mid_point_rot(2),'g.',...
+                'MarkerSize',10)
+            xline(mid_x,'g')
+        end
         
         %%
+        h_image = h_image_rot;
         roi_mask = roi_mask_rot;
     end
     
     %% Find DG regions
     [dg_regions,dg_centroids] = find_mask_dg(roi_mask);
-    
-    fig1 = plot_regions(roi_mask,dg_regions);
+    mid_point = find_dg_mid_point(dg_centroids);
 
+    % overlay dg regions on mask
+    fig1 = plot_regions(roi_mask,dg_regions);
+    plot(mid_point_rot(1),mid_point_rot(2),'r.',...
+            'MarkerSize',10)
+    xline(mid_point(1),'r','LineWidth',4)
+
+    
     if base_compare
         for idx = 1:2
             h = rectangle('Position',base_dg.dg_regions(idx).BoundingBox,...
@@ -203,9 +217,20 @@ function [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file
         end
     end
     
-    fname = strcat(file(1:end-11),'_dg_regions.tif');
+    fname = strcat(file(1:end-11),'_dg_regions_mask.tif');
     saveas(fig1,fullfile(roi_folder,fname));
     close(fig1);
+    
+    % overlay dg regions on h image
+    fig2 = plot_regions(h_image,dg_regions);
+    colormap(h_colormap)
+    plot(mid_point_rot(1),mid_point_rot(2),'r.',...
+            'MarkerSize',10)
+    xline(mid_point(1),'r','LineWidth',3)
+    
+    fname = strcat(file(1:end-11),'_dg_regions.tif');
+    saveas(fig2,fullfile(roi_folder,fname));
+    close(fig2);
     
     %% Calculate offset
     if base_compare
@@ -216,7 +241,8 @@ function [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file
     
     %% Save DG regions
     dg_fname = strcat(file(1:end-11),'_dg_regions.mat');
-    save(fullfile(roi_folder,dg_fname),'dg_regions','dg_centroids','theta','offset');
+    save(fullfile(roi_folder,dg_fname),'dg_regions','dg_centroids','theta',...
+        'offset','mid_offset');
     
     %% Find all ROIs
     if find_all_rois
@@ -264,17 +290,26 @@ function [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file
 %         ca3_R_coords = [dg_start_R(1)+dg_dims(1)+ca3_dg_w dg_centroid_R(2) ca3_dims(1) ca3_dims(2)];
 
 
-        fig2 = plot_regions(h_image_rot,dg_regions);colormap(h_colormap)
-        dg_L_roi = drawrectangle('Position',dg_L_coords,'Color','g');
-        ca1_L_roi = drawrectangle('Position',ca1_L_coords,'Color','m');
-        cortex_L_roi = drawrectangle('Position',cortex_L_coords,'Color','y');
-        ca3_L_roi = drawrectangle('Position',ca3_L_coords,'Color','b');
-
-        dg_R_roi = drawrectangle('Position',dg_R_coords,'Color','g');
-        ca1_R_roi = drawrectangle('Position',ca1_R_coords,'Color','m');
-        cortex_R_roi = drawrectangle('Position',cortex_R_coords,'Color','y');
-        ca3_R_roi = drawrectangle('Position',ca3_R_coords,'Color','b');
+        %% Plot auto ROIs
+        fig3 = plot_regions(h_image,dg_regions);colormap(h_colormap)
         
+        lw = 2.5;
+        col = 'k';
+        ls = '--';
+        
+        dg_L_roi = rectangle('Position',dg_L_coords,'EdgeColor',col,'LineWidth',lw,'LineStyle',ls);
+        ca1_L_roi = rectangle('Position',ca1_L_coords,'EdgeColor',col,'LineWidth',lw,'LineStyle',ls);
+        cortex_L_roi = rectangle('Position',cortex_L_coords,'EdgeColor',col,'LineWidth',lw,'LineStyle',ls);
+        ca3_L_roi = rectangle('Position',ca3_L_coords,'EdgeColor',col,'LineWidth',lw,'LineStyle',ls);
+
+        dg_R_roi = rectangle('Position',dg_R_coords,'EdgeColor',col,'LineWidth',lw,'LineStyle',ls);
+        ca1_R_roi = rectangle('Position',ca1_R_coords,'EdgeColor',col,'LineWidth',lw,'LineStyle',ls);
+        cortex_R_roi = rectangle('Position',cortex_R_coords,'EdgeColor',col,'LineWidth',lw,'LineStyle',ls);
+        ca3_R_roi = rectangle('Position',ca3_R_coords,'EdgeColor',col,'LineWidth',lw,'LineStyle',ls);
+        
+        fname = strcat(file(1:end-11),'_rois_auto.tif');
+        saveas(fig3,fullfile(roi_folder,fname));
+        close(fig3);
     
         %% Store ROIs
         dg_rois.name = 'DG';
@@ -311,7 +346,7 @@ function [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file
         rois = {dg_rois,ca1_rois,ca3_rois,cortex_rois};
         
         %% Save ROIs found
-        dg_roi_fname = strcat(file(1:end-11),'_auto_rois.mat');
+        dg_roi_fname = strcat(file(1:end-11),'_rois_auto.mat');
         save(fullfile(roi_folder,dg_roi_fname),'dg_rois','ca1_rois',...
             'ca3_rois','cortex_rois');
 
