@@ -1,4 +1,4 @@
-function [roi_mask,slice_mask] = create_roi_h_masks(h_image)
+function [roi_mask] = create_roi_h_mask(h_image)
     %% Create morphological roi + slice masks
     % @author: pdzialecka
     
@@ -70,39 +70,49 @@ function [roi_mask,slice_mask] = create_roi_h_masks(h_image)
     roi_mask = I3;
     
     %% ********* SLICE MASK *********
-    %% Find outline of the whole slice
-    slice_mask = h_image < 240; % ones(size(I));
-    k3 = 100;
-    kernel3 = 1/(k3*k3)*ones([k3,k3]);
-    slice_mask = imfilter(slice_mask,kernel3);
-    slice_mask = imfill(slice_mask,'holes');
-    
-    if show_figs
-        figure,imshow(slice_mask)
-    end
-    
-    %% Find boundaries of the slice mask
-%     h_image_2 = h_image_;
-%     h_image_2(~slice_mask) = nan;
+%     %% Find outline of the whole slice
+%     slice_mask = h_image < 240; % ones(size(I));
+%     k3 = 20;
+%     kernel3 = 1/(k3*k3)*ones([k3,k3]);
+%     slice_mask = imfilter(slice_mask,kernel3);
 %     
-%     boundaries = bwboundaries(h_image_2);
+%     min_con_pixels = 10e4;
+%     slice_mask = bwareaopen(slice_mask,min_con_pixels,8);
 %     
 %     if show_figs
-%         figure,imshow(h_image_2),hold on
-%         for k = 1:length(boundaries)
-%            b = boundaries{k};
-%            plot(b(:,2),b(:,1),'g','LineWidth',3);
-%         end
+%         h_image_slice_mask = labeloverlay(h_image,~slice_mask,...
+%             'Colormap',[0,0,1],'Transparency',0.7);
+%         figure,imshow(h_image_slice_mask)
 %     end
-    
-    %% Keep only the largest part of the mask
-    slice_mask = bwpropfilt(slice_mask,'Area',[1e7,inf]);
-    slice_region = regionprops(slice_mask);
-    
-    if show_figs
-        figure,imshow(slice_mask),hold on
-        h = rectangle('Position',slice_region.BoundingBox);
-        set(h,'EdgeColor','r','LineWidth',1.5);
-    end
+%     
+%     slice_mask_filled = imfill(slice_mask,'holes');
+%      
+%     if show_figs
+%         figure,imshow(slice_mask_filled)
+%     end
+%     
+%     %% Find boundaries of the slice mask
+% %     h_image_2 = h_image_;
+% %     h_image_2(~slice_mask) = nan;
+% %     
+% %     boundaries = bwboundaries(h_image_2);
+% %     
+% %     if show_figs
+% %         figure,imshow(h_image_2),hold on
+% %         for k = 1:length(boundaries)
+% %            b = boundaries{k};
+% %            plot(b(:,2),b(:,1),'g','LineWidth',3);
+% %         end
+% %     end
+%     
+%     %% Keep only the largest part of the mask
+%     slice_mask = bwpropfilt(slice_mask,'Area',[1e7,inf]);
+%     slice_region = regionprops(slice_mask);
+%     
+%     if show_figs
+%         figure,imshow(slice_mask),hold on
+%         h = rectangle('Position',slice_region.BoundingBox);
+%         set(h,'EdgeColor','r','LineWidth',1.5);
+%     end
 
 end

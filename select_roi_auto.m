@@ -95,6 +95,9 @@ function [rois_x,rois_y] = select_roi_auto(file_)
         ca1_rois = rois{2};
         ca3_rois = rois{3};
         cortex_rois = rois{4};
+        
+        %% Create slice mask
+        [slice_mask,slice_mask_filled] = create_slice_mask(h_image,file_);
 
         %%
         for roi_idx = 1:roi_no
@@ -182,12 +185,29 @@ function [rois_x,rois_y] = select_roi_auto(file_)
                     h_image_roi = h_image(roi_y,roi_x);
                     dab_image_roi = dab_image(roi_y,roi_x);
                     res_image_roi = res_image(roi_y,roi_x);
+                    slice_mask_roi = slice_mask(roi_y,roi_x);
 
                     fig3 = figure('units','normalized','outerposition',[0 0 1 1]);
                     ax(1) = subplot(121); imshow(h_image_roi)
                     ax(2) = subplot(122); imshow(dab_image_roi)
                     colormap(ax(1),h_colormap)
                     colormap(ax(2),dab_colormap)
+                    
+                    %% Display zoomed in ROI w slice mask
+                    h_image_roi_smask = labeloverlay(h_image_roi,~slice_mask_roi,...
+                        'Colormap',[0,0,1],'Transparency',0.7);
+                    dab_image_roi_smask = labeloverlay(dab_image_roi,~slice_mask_roi,...
+                        'Colormap',[0,0,1],'Transparency',0.7);
+                    
+                    fig4 = figure('units','normalized','outerposition',[0 0 1 1]);
+                    ax(1) = subplot(121); imshow(h_image_roi_smask)
+                    ax(2) = subplot(122); imshow(dab_image_roi_smask)
+                    colormap(ax(1),h_colormap)
+                    colormap(ax(2),dab_colormap)
+                    
+                    slice_area = sum(slice_mask_roi,[1,2]);
+                    total_area = size(h_image_roi,1)*size(h_image_roi,2);
+                    slice_area_norm = slice_area/total_area; % as % of total area
 
                     %% Accept or reject ROI
 %                     answer = questdlg('Do you want to accept this ROI?',...
@@ -231,10 +251,15 @@ function [rois_x,rois_y] = select_roi_auto(file_)
 %                         fname3 = strcat(fname,'_3_H_DAB_',num2str(magnification),'x.tif');
                         fname3 = strcat(fname,'_3_H_DAB_',num2str(roi_size_um(1)),'x',num2str(roi_size_um(2)),'um.tif');
                         saveas(fig3,fullfile(roi_folder,fname3));
+                        
+                        fname4 = strcat(fname,'_3_H_DAB_',num2str(roi_size_um(1)),'x',num2str(roi_size_um(2)),'um_slice_mask.tif');
+                        saveas(fig4,fullfile(roi_folder,fname4));
+
 
                         close(fig1);
                         close(fig2);
                         close(fig3);
+                        close(fig4);
 
 
                         % roi details
@@ -247,6 +272,10 @@ function [rois_x,rois_y] = select_roi_auto(file_)
                         roi.x = roi_x;
                         roi.y = roi_y;
                         roi.auto_roi = auto_find_rois & use_auto_roi;
+                        
+                        roi.slice_area = slice_area;
+                        roi.total_area = total_area;
+                        roi.slice_area_norm = slice_area_norm;
 
                         save(file_roi_fname,'roi');
                         fprintf('ROI %s saved\n',fname);

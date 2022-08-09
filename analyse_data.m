@@ -2,12 +2,6 @@ function [] = analyse_data(files,load_rois,close_figs)
     %% Analyse IHC data across selected ROIs
     % @author: pdzialecka
     
-    % Variables to explore:
-    % * pixel_thresh_factor (default: 1)
-    % * min_con_pixels (default: 25 at 20x, 100 at 10x)
-    % * k3 (spatial filter variable)
-    % * roi_size / magnification (may affect other parameters)
-    
     %% Default input options
     if ~exist('load_rois','var')
         load_rois = 1;
@@ -83,7 +77,11 @@ function [] = analyse_data(files,load_rois,close_figs)
         % TODO: change only to detect roi img files. no longer needed to
         % load setts
         roi_not_found = 0;
+        rois_x = {};
+        rois_y = {};
+        rois_n_area = [];
 
+        %%
         for roi_idx = 1:roi_no
     % %         fname = strcat(file(1:end-11),'_roi_',roi_fnames{roi_idx},'.mat');
             fname = strcat(file(1:end-11),'_',num2str(roi_order_no(roi_idx)),'_roi_',roi_fnames{roi_idx},'.mat');
@@ -96,6 +94,7 @@ function [] = analyse_data(files,load_rois,close_figs)
                     roi_file = load(roi_fname).roi;
                     rois_x{roi_idx} = roi_file.x;
                     rois_y{roi_idx} = roi_file.y;
+                    rois_n_area(roi_idx) = roi_file.slice_area_norm;
                     fprintf('Successfully loaded %s ROI\n',fname);
 
                 else
@@ -455,6 +454,8 @@ function [] = analyse_data(files,load_rois,close_figs)
             fprintf('Analysing ROI %s:\n',fname)
             fprintf('No of particles = %d\n',particle_no)
             
+            % TODO: normalise number of particles by area?
+            
             %% Save final masks
             mask_name1 = strcat(fname,'_mask_all');
             save(fullfile(results_folder,mask_name1),'dab_roi_mask');
@@ -491,8 +492,12 @@ function [] = analyse_data(files,load_rois,close_figs)
 %             save(img_fname,'roi_image');
 
             %% Density (% area covered)
+            tot_n_area = rois_n_area(roi_idx);
             positive_pixels = sum(dab_roi_mask,[1,2]);
-            total_pixels = size(dab_roi_mask,1)*size(dab_roi_mask,2);
+            
+            % normalise total pixels to slice area
+            total_pixels = size(dab_roi_mask,1)*size(dab_roi_mask,2)*tot_n_area;
+%             total_pixels = size(dab_roi_mask,1)*size(dab_roi_mask,2);
 
             density = round(positive_pixels/total_pixels*100,1);
 %             fprintf('Area covered for %s ROI = %1.1f %% \n', fname, density)

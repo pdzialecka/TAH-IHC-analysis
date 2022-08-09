@@ -353,4 +353,3 @@ function [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file
     end
     
 end
-    
