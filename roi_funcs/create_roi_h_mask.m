@@ -6,13 +6,24 @@ function [roi_mask] = create_roi_h_mask(h_image)
     show_figs = 0;
     
     %% ********* ROI MASK *********
+    %% Smooth the image so mask less granulated
+    k2 = 50;
+    kernel2 = 1/(k2*k2)*ones([k2,k2]);
+    h_image_ = imfilter(h_image,kernel2,'replicate');
+    if show_figs
+        figure,imshow(h_image_)
+    end
+    
+%     h_image_2 = imgaussfilt(h_image_,20);
+%     h_image_ = h_image_2;
+    
     %% Enhance image contrast
     enhance_contrast = 1;
 
     if enhance_contrast
-        k1 = 10;
-        kernel1 = 1/(k1*k1)*ones([k1,k1]);
-        h_image_ = imfilter(h_image,kernel1);
+%         k1 = 10;
+%         kernel1 = 1/(k1*k1)*ones([k1,k1]);
+%         h_image_ = imfilter(h_image,kernel1);
 
 %         h_imadjust = imadjust(h_image_);
 %         h_histeq = histeq(h_image_);
@@ -23,19 +34,6 @@ function [roi_mask] = create_roi_h_mask(h_image)
             figure,imshow(h_image_)
         end
     end
-    
-    %% Smooth the image so mask less granulated
-%     k2 = 50;
-%     kernel2 = 1/(k2*k2)*ones([k2,k2]);
-%     h_image_2 = imfilter(h_image_,kernel2);
-%     if show_figs
-%         figure,imshow(h_image_2)
-%     end
-%     
-% %     h_image_2 = imgaussfilt(h_image_,20);
-% %     figure,imshow(h_image_2)
-%     
-%     h_image_ = h_image_2;
 
     %% Create binary dab image
     if enhance_contrast
@@ -51,7 +49,7 @@ function [roi_mask] = create_roi_h_mask(h_image)
 
     k2 = 10;
     kernel2 = 1/(k2*k2)*ones([k2,k2]);
-    I2 = imfilter(I,kernel2);
+    I2 = imfilter(I,kernel2,'replicate');
 
     if show_figs
         figure,imshow(I2)

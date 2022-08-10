@@ -1,19 +1,19 @@
-function [dg_regions,dg_centroids,regions] = find_mask_dg(I_mask)
+function [dg_regions,dg_centroids,regions] = find_mask_dg(roi_mask)
     %% Find dendate gyri within regions of a binary mask
     % @author: pdzialecka
     
     %%
-    regions = regionprops(I_mask,'Area','Centroid',...
+    regions = regionprops(roi_mask,'Area','Centroid',...
         'BoundingBox','Circularity','Eccentricity',...
         'MajorAxisLength','MinorAxisLength','ConvexArea');
 
     % consider only upper half of the slice
     centroids = cat(1,regions.Centroid);
-    y_lim =  size(I_mask,1)/2;
+    y_lim =  size(roi_mask,1)/2;
     regions = regions(centroids(:,2)<y_lim);
 
     % middle region only
-    x_lim = [size(I_mask,2)*1/3, size(I_mask,2)*2/3];
+    x_lim = [size(roi_mask,2)*1/3, size(roi_mask,2)*2/3];
     centroids = cat(1,regions.Centroid);
     regions = regions(centroids(:,1)<x_lim(2) & centroids(:,1)>x_lim(1));
 
@@ -25,12 +25,14 @@ function [dg_regions,dg_centroids,regions] = find_mask_dg(I_mask)
     % exclude too big or small regions ('filled' area)
     size_exclude = [regions.ConvexArea] > 4e6 | [regions.ConvexArea] < 1e6;
     regions(size_exclude) = [];
+   
+%     plot_regions(roi_mask,regions);
+
     
     % ensure only regions with major/minor axis ratio > 2
-    axis_ratio = 2;
     bb_regions = cat(1,regions.BoundingBox);
     width_to_height_ratio = bb_regions(:,3)./bb_regions(:,4);
-    ratio_exclude = width_to_height_ratio < 2 | width_to_height_ratio > 5;
+    ratio_exclude = width_to_height_ratio < 1.5 | width_to_height_ratio > 5;
 %     regions_axis_ratio = [regions.MajorAxisLength]./[regions.MinorAxisLength];
 %     ratio_exclude = regions_axis_ratio < 2 | regions_axis_ratio > 5;
     regions(ratio_exclude) = [];

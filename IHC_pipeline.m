@@ -16,14 +16,14 @@ base_folder = 'C:\Users\Pat\Desktop\TAH';
 
 %% Analysis steps
 deconvolve = 0;
-select_rois = 0;
-analyse = 1;
+select_rois = 1;
+analyse = 0;
 analyse_all = 0;
 summarise = 0;
 
 %% Analysis settings
 % magnification = 20;
-roi_size_um = [500,500]; % 400 x 400 um
+roi_size_um = [500,500]; % 500 x 500 um
 all_img_types = {'moc23','12f4','ct695','iba1','gfap','cfos','ki67'};
 img_type = 'moc23'; % specific analysis
 
@@ -91,8 +91,8 @@ for cohort_idx = 1:length(cohort_folders)
                 
                 for idx = 1:length(files)
                     file_ = files(idx);
-                    select_roi(file_,roi_size_um);
-%                     select_auto_roi(file_);
+%                     select_roi(file_,roi_size_um);
+                    select_roi_auto(file_);
                 end
             end
             

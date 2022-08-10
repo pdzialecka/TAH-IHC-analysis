@@ -1,6 +1,8 @@
 function [slice_mask,slice_mask_filled,slice_region] = create_slice_mask(h_image,file_)
-    %%
+    %% Create slice mask based on the h_image
     % @author: pdzialecka
+    
+    % The function should be used on rotated h_image (if auto rois selected)
     
     %%
     show_figs = 0;
@@ -13,28 +15,11 @@ function [slice_mask,slice_mask_filled,slice_region] = create_slice_mask(h_image
     slice_mask = h_image < 240; % ones(size(I));
     k3 = 20;
     kernel3 = 1/(k3*k3)*ones([k3,k3]);
-    slice_mask = imfilter(slice_mask,kernel3);
+    slice_mask = imfilter(slice_mask,kernel3,'replicate');
     
     min_con_pixels = 10e4;
     slice_mask = bwareaopen(slice_mask,min_con_pixels,8);
-    
-    % visualise inverse of the mask found
-    h_image_slice_mask = labeloverlay(h_image,~slice_mask,...
-        'Colormap',[0,0,1],'Transparency',0.7);
-    fig = figure;
-    imshow(h_image_slice_mask)
-    
-    fname = strcat(file(1:end-11),'_slice_mask.tif');
-    saveas(fig,fullfile(roi_folder,fname));
-    close(fig);
 
-    %% Find the filled slice mask
-    slice_mask_filled = imfill(slice_mask,'holes');
-     
-    if show_figs
-        figure,imshow(slice_mask_filled)
-    end
-    
     %% Find boundaries of the slice mask
 %     h_image_2 = h_image_;
 %     h_image_2(~slice_mask) = nan;
@@ -48,8 +33,25 @@ function [slice_mask,slice_mask_filled,slice_region] = create_slice_mask(h_image
 %            plot(b(:,2),b(:,1),'g','LineWidth',3);
 %         end
 %     end
+
+    %% Visualise inverse of the slice mask found
+    h_image_slice_mask = labeloverlay(h_image,~slice_mask,...
+        'Colormap',[0,0,1],'Transparency',0.7);
+    fig = figure;
+    imshow(h_image_slice_mask)
     
-    %% Keep only the largest part of the mask
+    fname = strcat(file(1:end-11),'_slice_mask.tif');
+    saveas(fig,fullfile(roi_folder,fname));
+    close(fig);
+    
+    %% Find the filled slice mask
+    slice_mask_filled = imfill(slice_mask,'holes');
+     
+    if show_figs
+        figure,imshow(slice_mask_filled)
+    end
+
+    %% Find the slice region
 %     slice_mask = bwpropfilt(slice_mask,'Area',[1e7,inf]);
     slice_region = regionprops(slice_mask_filled);
     
@@ -59,6 +61,33 @@ function [slice_mask,slice_mask_filled,slice_region] = create_slice_mask(h_image
         set(h,'EdgeColor','r','LineWidth',1.5);
     end
     
+    %% Remove manually selected parts of the mask
+    remove_file = dir(fullfile(roi_folder,'*remove_mask.mat'));
+    
+    if ~isempty(remove_file)
+        remove_mask = load(fullfile(remove_file.folder,remove_file.name)).remove_mask;
+        
+        new_slice_mask = slice_mask;
+        new_slice_mask(remove_mask) = 0;
+        
+        % Replot the slice mask figure
+        h_image_slice_mask = labeloverlay(h_image,~slice_mask,...
+            'Colormap',[0,0,1],'Transparency',0.7);
+        h_image_slice_mask_2 = labeloverlay(h_image_slice_mask,remove_mask,...
+            'Colormap',[1,0,0],'Transparency',0.7);
+        
+        fig = figure;
+        imshow(h_image_slice_mask_2)
+        fname = strcat(file(1:end-11),'_slice_mask.tif');
+        saveas(fig,fullfile(roi_folder,fname));
+        close(fig);
+        
+        
+        slice_mask = new_slice_mask;
+%         figure,imshow(slice_mask)
+    end
+    
+        
     %% Save masks
     mask_fname = strcat(file(1:end-11),'_slice_mask.mat');
     save(fullfile(roi_folder,mask_fname),'slice_mask','slice_mask_filled',...

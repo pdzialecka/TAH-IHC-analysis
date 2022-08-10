@@ -32,9 +32,11 @@ function [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file
     [roi_folder,~] = find_roi_folder(file_.folder);
     
     %% Find existing dg_regions file (moc23)
+    % do not base compare if finding rois automatically
+    
     base_dg_file = dir(fullfile(roi_folder,'*moc23*dg_regions*'));
     
-    if ~isempty(base_dg_file) && ~contains(file,'moc23')
+    if ~isempty(base_dg_file) && ~contains(file,'moc23') && ~find_all_rois
         base_dg = load(fullfile(base_dg_file(1).folder,base_dg_file(1).name));
         base_dg_centroids = base_dg.dg_centroids;
         
@@ -42,7 +44,6 @@ function [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file
     else
         base_compare = 0;
     end
-
     
     %% Find right and left hemispheres (not in use)
 %     slice_xs = round([slice_region.BoundingBox(1),slice_region.BoundingBox(1)+slice_region.BoundingBox(3)]);
@@ -112,7 +113,7 @@ function [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file
 %     end
 
     %% Find roi binary mask
-    [roi_mask,slice_mask] = create_roi_h_masks(h_image);
+    [roi_mask] = create_roi_h_mask(h_image);
     
     %% Find initial DG regions    
     if rotate_slice
@@ -149,7 +150,7 @@ function [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file
         end
         
         roi_mask_rot = imwarp(roi_mask,tform,'interp','cubic','FillValues',0);
-        slice_mask_rot = imwarp(slice_mask,tform,'interp','cubic','FillValues',0);
+%         slice_mask_rot = imwarp(slice_mask,tform,'interp','cubic','FillValues',0);
 
         % didn't work in some cases - not sure why
 %         [x,y] = transformPointsForward(tform,mid_point(1),mid_point(2));
@@ -165,20 +166,20 @@ function [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file
                 'MarkerSize',10)
             xline(mid_x,'g')
         end
-
+        
         %% Offset image so midline in the middle
         new_size = size(h_image_rot);
-        mid_offset = new_size(2)/2-mid_x;
+        mid_offset = round(new_size(2)/2-mid_x);
 
         if mid_offset > 0 % right side too large
-            h_image_rot = h_image_rot(:,1:end-mid_offset);
-            roi_mask_rot = roi_mask_rot(:,1:end-mid_offset);
+%             h_image_rot = h_image_rot(:,1:end-mid_offset);
+            roi_mask_offset = roi_mask_rot(:,1:end-mid_offset);
 
         else % left side too large
-            h_image_rot = h_image_rot(:,abs(mid_offset)+1:end);
-            roi_mask_rot = roi_mask_rot(:,abs(mid_offset)+1:end);
-            mid_x = mid_x-mid_offset;
-            mid_point_rot(1) = mid_x;
+%             h_image_rot = h_image_rot(:,abs(mid_offset)+1:end);
+            roi_mask_offset = roi_mask_rot(:,abs(mid_offset)+1:end);
+%             mid_x = mid_x-mid_offset;
+%             mid_point_rot(1) = mid_x;
         end
 
         %% Final version
@@ -193,15 +194,22 @@ function [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file
         %%
         h_image = h_image_rot;
         roi_mask = roi_mask_rot;
+        mid_point = mid_point_rot;
+        
     end
     
     %% Find DG regions
-    [dg_regions,dg_centroids] = find_mask_dg(roi_mask);
+    if rotate_slice
+        % use offset roi mask to find rois correctly
+        [dg_regions,dg_centroids] = find_mask_dg(roi_mask_offset);
+    else
+        [dg_regions,dg_centroids] = find_mask_dg(roi_mask);
+    end
     mid_point = find_dg_mid_point(dg_centroids);
 
     % overlay dg regions on mask
     fig1 = plot_regions(roi_mask,dg_regions);
-    plot(mid_point_rot(1),mid_point_rot(2),'r.',...
+    plot(mid_point(1),mid_point(2),'r.',...
             'MarkerSize',10)
     xline(mid_point(1),'r','LineWidth',4)
 
@@ -246,50 +254,116 @@ function [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file
     
     %% Find all ROIs
     if find_all_rois
-        dg_dims_um = [1300,600];
-        dg_dims = um_to_pixel(dg_dims_um);
-        dg_centroid_L = dg_centroids(1,:);
-        dg_centroid_R = dg_centroids(2,:);
+        
+        method_no = 2;
+        
+        %% SIMPLEST APPROACH: ROIS FIXED DISTANCE FROM DG
+        if method_no == 1
+        
+            dg_dims_um = [1300,600];
+            dg_dims = um_to_pixel(dg_dims_um);
+            dg_centroid_L = dg_centroids(1,:);
+            dg_centroid_R = dg_centroids(2,:);
 
-        % coordinates. start = upper left corner on the pic
-        dg_start_L = round([dg_centroid_L(1)-dg_dims(1)/2 dg_centroid_L(2)-dg_dims(2)/2]);
-        dg_L_coords = [dg_start_L(1) dg_start_L(2) dg_dims(1) dg_dims(2)];
+            % coordinates. start = upper left corner on the pic
+            dg_start_L = round([dg_centroid_L(1)-dg_dims(1)/2 dg_centroid_L(2)-dg_dims(2)/2]);
+            dg_L_coords = [dg_start_L(1) dg_start_L(2) dg_dims(1) dg_dims(2)];
 
-        dg_start_R = round([dg_centroid_R(1)-dg_dims(1)/2 dg_centroid_R(2)-dg_dims(2)/2]);
-        dg_R_coords = [dg_start_R(1) dg_start_R(2) dg_dims(1) dg_dims(2)];
+            dg_start_R = round([dg_centroid_R(1)-dg_dims(1)/2 dg_centroid_R(2)-dg_dims(2)/2]);
+            dg_R_coords = [dg_start_R(1) dg_start_R(2) dg_dims(1) dg_dims(2)];
 
-        % ca1 100um higher than dg
-        ca1_dims_um = [1300,500];
-        ca1_dims = um_to_pixel(ca1_dims_um);
-        ca1_dg_h_um = 100;
-        ca1_dg_h = um_to_pixel(ca1_dg_h_um);
-        ca1_L_coords = [dg_start_L(1) dg_start_L(2)-ca1_dims(2)-ca1_dg_h ca1_dims(1) ca1_dims(2)];
-        ca1_R_coords = [dg_start_R(1) dg_start_R(2)-ca1_dims(2)-ca1_dg_h ca1_dims(1) ca1_dims(2)];
+            % ca1 100um higher than dg
+            ca1_dims_um = [1300,500];
+            ca1_dims = um_to_pixel(ca1_dims_um);
+            ca1_dg_h_um = 100;
+            ca1_dg_h = um_to_pixel(ca1_dg_h_um);
+            ca1_L_coords = [dg_start_L(1) dg_start_L(2)-ca1_dims(2)-ca1_dg_h ca1_dims(1) ca1_dims(2)];
+            ca1_R_coords = [dg_start_R(1) dg_start_R(2)-ca1_dims(2)-ca1_dg_h ca1_dims(1) ca1_dims(2)];
 
-        % cortex 100um higher than ca1
-        cortex_dims_um = [1300,700];
-        cortex_dims = um_to_pixel(cortex_dims_um);
-        cortex_ca1_h_um = 100;
-        cortex_ca1_h = um_to_pixel(cortex_ca1_h_um);
-        cortex_L_coords = [ca1_L_coords(1) ca1_L_coords(2)-cortex_dims(2)-cortex_ca1_h cortex_dims(1) cortex_dims(2)];
-        cortex_R_coords = [ca1_R_coords(1) ca1_R_coords(2)-cortex_dims(2)-cortex_ca1_h cortex_dims(1) cortex_dims(2)];
+            % cortex 100um higher than ca1
+            cortex_dims_um = [1300,700];
+            cortex_dims = um_to_pixel(cortex_dims_um);
+            cortex_ca1_h_um = 100;
+            cortex_ca1_h = um_to_pixel(cortex_ca1_h_um);
+            cortex_L_coords = [ca1_L_coords(1) ca1_L_coords(2)-cortex_dims(2)-cortex_ca1_h cortex_dims(1) cortex_dims(2)];
+            cortex_R_coords = [ca1_R_coords(1) ca1_R_coords(2)-cortex_dims(2)-cortex_ca1_h cortex_dims(1) cortex_dims(2)];
 
-        % ca3 is tricky, varies between images
-        ca3_dg_w_um = 100;
-        ca3_dg_w = um_to_pixel(ca3_dg_w_um);
+            % ca3 is tricky, varies between images
+            ca3_dg_w_um = 100;
+            ca3_dg_w = um_to_pixel(ca3_dg_w_um);
 
-        % OPTION 1: includes ca2
-        ca3_dims_um = [750,800];
-        ca3_dims = um_to_pixel(ca3_dims_um);
-        ca3_L_coords = [dg_start_L(1)-ca3_dims(1)-ca3_dg_w dg_start_L(2) ca3_dims(1) ca3_dims(2)];
-        ca3_R_coords = [dg_start_R(1)+dg_dims(1)+ca3_dg_w dg_start_R(2) ca3_dims(1) ca3_dims(2)];
+            % OPTION 1: includes ca2
+            ca3_dims_um = [750,800];
+            ca3_dims = um_to_pixel(ca3_dims_um);
+            ca3_L_coords = [dg_start_L(1)-ca3_dims(1)-ca3_dg_w dg_start_L(2) ca3_dims(1) ca3_dims(2)];
+            ca3_R_coords = [dg_start_R(1)+dg_dims(1)+ca3_dg_w dg_start_R(2) ca3_dims(1) ca3_dims(2)];
 
-        % OPTION 2: height only up to dg centroid. may be not good enough
-%         ca3_dims = round([750,500]/pixel_size);
-%         ca3_L_coords = [dg_start_L(1)-ca3_dims(1)-ca3_dg_w dg_centroid_L(2) ca3_dims(1) ca3_dims(2)];
-%         ca3_R_coords = [dg_start_R(1)+dg_dims(1)+ca3_dg_w dg_centroid_R(2) ca3_dims(1) ca3_dims(2)];
+            % OPTION 2: height only up to dg centroid. may be not good enough
+    %         ca3_dims = round([750,500]/pixel_size);
+    %         ca3_L_coords = [dg_start_L(1)-ca3_dims(1)-ca3_dg_w dg_centroid_L(2) ca3_dims(1) ca3_dims(2)];
+    %         ca3_R_coords = [dg_start_R(1)+dg_dims(1)+ca3_dg_w dg_centroid_R(2) ca3_dims(1) ca3_dims(2)];
+        end
+        
+        %% APPROACH BASED ON MORPHOLOGY: ROIS RELATIVE DISTANCE FROM DG AND CORTEX SURFACE
+        if method_no == 2
+            [slice_mask,~,slice_region] = create_slice_mask(h_image,file_);
+            cortex_surface_y = round(slice_region.BoundingBox(2));
+
+            % DG
+            dg_dims_um = [1300,600];
+            dg_dims = um_to_pixel(dg_dims_um);
+            dg_centroid_L = dg_centroids(1,:);
+            dg_centroid_R = dg_centroids(2,:);
+
+            % coordinates. start = upper left corner on the pic
+            dg_start_L = round([dg_centroid_L(1)-dg_dims(1)/2 dg_centroid_L(2)-dg_dims(2)/2]);
+            dg_L_coords = [dg_start_L(1) dg_start_L(2) dg_dims(1) dg_dims(2)];
+
+            dg_start_R = round([dg_centroid_R(1)-dg_dims(1)/2 dg_centroid_R(2)-dg_dims(2)/2]);
+            dg_R_coords = [dg_start_R(1) dg_start_R(2) dg_dims(1) dg_dims(2)];
 
 
+            % USING DISTANCE FROM TOP CORTEX EDGE TO MIDPOINT DG TO USE
+            % NORMALISED LOCATION OF CA1 AND CORTEX FOR EACH SLICE
+            dg_centroid_y = dg_centroids(1,2);
+            dg_cortex_dist = dg_centroid_y - cortex_surface_y; % ~2050um from cortex edge (allen atlas)
+
+
+            % CA1
+            % ca1 around 60% down dg_cortex_dist
+            ca1_y = round(cortex_surface_y + 0.6*dg_cortex_dist); % ~1250um = ~60% of dg_cortex_dist
+
+            ca1_dims_um = [1300,500];
+            ca1_dims = um_to_pixel(ca1_dims_um);
+
+            % 20% of ROI above CA1 point, 80% below
+            ca1_y_start = ca1_y - round(ca1_dims(2)*0.2);
+            ca1_L_coords = [dg_start_L(1) ca1_y_start ca1_dims(1) ca1_dims(2)];
+            ca1_R_coords = [dg_start_R(1) ca1_y_start ca1_dims(1) ca1_dims(2)];
+
+
+            % CORTEX
+            % cortex: 0-1000um depth. 0.1-0.5 range for ~200-1000um depth
+            cortex_top_y = round(cortex_surface_y + 0.1*dg_cortex_dist);
+
+            cortex_dims_um = [1300,800];
+            cortex_dims = um_to_pixel(cortex_dims_um);
+
+            cortex_L_coords = [dg_start_L(1) cortex_top_y cortex_dims(1) cortex_dims(2)];
+            cortex_R_coords = [dg_start_R(1) cortex_top_y cortex_dims(1) cortex_dims(2)];
+
+            % CA3
+            % TODO: make it a manual selection & use base_compare to find
+            % subsequent ones
+            ca3_dg_w_um = 100;
+            ca3_dg_w = um_to_pixel(ca3_dg_w_um);
+
+            ca3_dims_um = [750,800];
+            ca3_dims = um_to_pixel(ca3_dims_um);
+            ca3_L_coords = [dg_start_L(1)-ca3_dims(1)-ca3_dg_w dg_start_L(2) ca3_dims(1) ca3_dims(2)];
+            ca3_R_coords = [dg_start_R(1)+dg_dims(1)+ca3_dg_w dg_start_R(2) ca3_dims(1) ca3_dims(2)];
+        end
+        
         %% Plot auto ROIs
         fig3 = plot_regions(h_image,dg_regions);colormap(h_colormap)
         
@@ -307,6 +381,9 @@ function [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file
         cortex_R_roi = rectangle('Position',cortex_R_coords,'EdgeColor',col,'LineWidth',lw,'LineStyle',ls);
         ca3_R_roi = rectangle('Position',ca3_R_coords,'EdgeColor',col,'LineWidth',lw,'LineStyle',ls);
         
+        h = rectangle('Position',slice_region.BoundingBox);
+        set(h,'EdgeColor','r','LineWidth',1.5);
+        
         fname = strcat(file(1:end-11),'_rois_auto.tif');
         saveas(fig3,fullfile(roi_folder,fname));
         close(fig3);
@@ -323,8 +400,10 @@ function [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file
         ca1_rois.dims = ca1_dims;
         ca1_rois.L_coords = ca1_L_coords;
         ca1_rois.R_coords = ca1_R_coords;
-        ca1_rois.ca1_dg_h_um = ca1_dg_h_um;
-        ca1_rois.ca1_dg_h = ca1_dg_h;
+        if method_no == 1 % TODO: calculate for method 2?
+            ca1_rois.ca1_dg_h_um = ca1_dg_h_um;
+            ca1_rois.ca1_dg_h = ca1_dg_h;
+        end
 
         ca3_rois.name = 'CA3';
         ca3_rois.dims_um = ca3_dims_um;
@@ -339,11 +418,19 @@ function [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file
         cortex_rois.dims = cortex_dims;
         cortex_rois.L_coords = cortex_L_coords;
         cortex_rois.R_coords = cortex_R_coords;
-        cortex_rois.cortex_ca1_h_um = cortex_ca1_h_um;
-        cortex_rois.cortex_ca1_h = cortex_ca1_h;
+        if method_no == 1
+            cortex_rois.cortex_ca1_h_um = cortex_ca1_h_um;
+            cortex_rois.cortex_ca1_h = cortex_ca1_h;
+        end
 
-
-        rois = {dg_rois,ca1_rois,ca3_rois,cortex_rois};
+%         rois = {dg_rois,ca1_rois,ca3_rois,cortex_rois};
+        rois = [];
+        rois.dg_rois = dg_rois;
+        rois.ca1_rois = ca1_rois;
+        rois.ca3_rois = ca3_rois;
+        rois.cortex_rois = cortex_rois;
+        
+        rois.theta = theta;
         
         %% Save ROIs found
         dg_roi_fname = strcat(file(1:end-11),'_rois_auto.mat');

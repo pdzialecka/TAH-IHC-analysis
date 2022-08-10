@@ -91,10 +91,10 @@ function [rois_x,rois_y] = select_roi_auto(file_)
         res_image = imwarp(res_image,tform,'interp','cubic','FillValues',255);
 
         %% Extract ROI info
-        dg_rois = rois{1};
-        ca1_rois = rois{2};
-        ca3_rois = rois{3};
-        cortex_rois = rois{4};
+%         dg_rois = rois{1};
+%         ca1_rois = rois{2};
+%         ca3_rois = rois{3};
+%         cortex_rois = rois{4};
         
         %% Create slice mask
         [slice_mask,slice_mask_filled] = create_slice_mask(h_image,file_);
@@ -108,23 +108,24 @@ function [rois_x,rois_y] = select_roi_auto(file_)
             roi_fname = roi_fnames{roi_idx};
             
             %% ROI info
-            if contains(roi_fname,'R')
-                coords_field = 'R_coords';
-            elseif contains(roi_fname,'L')
-                coords_field = 'L_coords';
-            end
-            
-            if contains(roi_fname,'DG')
-                this_roi = dg_rois;
-            elseif contains(roi_fname,'CA1')
-                this_roi = ca1_rois;
-            elseif contains(roi_fname,'CA3')
-                this_roi = ca3_rois;
-            elseif contains(roi_fname,'cortex')
-                this_roi = cortex_rois;
-            end
-            
-            coords = getfield(this_roi,coords_field);
+            [coords,this_roi,coords_field] = extract_roi_coords(rois,roi_fname);
+%             if contains(roi_fname,'R')
+%                 coords_field = 'R_coords';
+%             elseif contains(roi_fname,'L')
+%                 coords_field = 'L_coords';
+%             end
+%             
+%             if contains(roi_fname,'DG')
+%                 this_roi = dg_rois;
+%             elseif contains(roi_fname,'CA1')
+%                 this_roi = ca1_rois;
+%             elseif contains(roi_fname,'CA3')
+%                 this_roi = ca3_rois;
+%             elseif contains(roi_fname,'cortex')
+%                 this_roi = cortex_rois;
+%             end
+%             
+%             coords = getfield(this_roi,coords_field);
 
             %%
             if ~exist(file_roi_fname,'file')
@@ -166,7 +167,7 @@ function [rois_x,rois_y] = select_roi_auto(file_)
                     
                     roi_x_1 = coords(1);
                     roi_y_1 = coords(2);
-                    roi_size = this_roi.dims;
+                    roi_size = coords(3:4);
                     roi_size_um = this_roi.dims_um;
 
                     roi_x = roi_x_1:roi_x_1+roi_size(1);
@@ -301,6 +302,6 @@ function [rois_x,rois_y] = select_roi_auto(file_)
             end
         end
     else
-        fprintf('Skipping %s; all ROIs already exist\n',fname);
+        fprintf('Skipping %s; all ROIs already exist\n',file);
     end
 end
