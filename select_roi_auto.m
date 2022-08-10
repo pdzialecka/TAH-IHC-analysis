@@ -4,6 +4,7 @@ function [rois_x,rois_y] = select_roi_auto(file_)
     
     % The functions checks if a given ROI already exists for this image.
     % If it does, it skipps the condition to not override any existing ROIs
+    % -> UPDATE: at the moment ROI files are overwritten!
     
     % Skeleton from manual function (select_roi) kept for code continuity
     % & easier switching between the two versions
@@ -67,7 +68,7 @@ function [rois_x,rois_y] = select_roi_auto(file_)
     end
     
     %%
-    if ~all_rois_exist
+    if 1 % ~all_rois_exist
         
         %% Load deconvolved images
         file_path = fullfile(folder,file);
@@ -128,7 +129,7 @@ function [rois_x,rois_y] = select_roi_auto(file_)
 %             coords = getfield(this_roi,coords_field);
 
             %%
-            if ~exist(file_roi_fname,'file')
+            if 1 % ~exist(file_roi_fname,'file')
                 %%
                 roi_accepted = 0;
                 use_auto_roi = 1;

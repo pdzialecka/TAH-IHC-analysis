@@ -74,8 +74,6 @@ function [] = analyse_data(files,load_rois,close_figs)
 %         [h_image,dab_image] = load_deconvolved_images(file_path);
         
         %% Find ROIs
-        % TODO: change only to detect roi img files. no longer needed to
-        % load setts
         roi_not_found = 0;
         rois_x = {};
         rois_y = {};
@@ -109,6 +107,10 @@ function [] = analyse_data(files,load_rois,close_figs)
         if ~load_rois || roi_not_found
             [rois_x,rois_y] = select_roi(files(idx));
         end
+        
+        %% Load slice mask
+        sm_file = dir(fullfile(roi_folder,strcat('*',img_type,'*slice_mask.mat')));
+        slice_mask = load(fullfile(sm_file.folder,sm_file.name)).slice_mask;
 
         %% Analysis per ROI
         for roi_idx = 1:roi_no
@@ -123,6 +125,11 @@ function [] = analyse_data(files,load_rois,close_figs)
             %% Load ROI image
             file_path = fullfile(roi_img_folder,strcat(fname,'.tif'));
             [h_image_roi,dab_image_roi,~] = load_deconvolved_images(file_path);
+            
+            %% Find slice mask for ROI
+            roi_x = rois_x{roi_idx};
+            roi_y = rois_y{roi_idx};
+            slice_mask_roi = slice_mask(roi_y,roi_x);
             
             %% Denoise images
             % This filter gets rid of most of the random pepper noise
@@ -233,6 +240,11 @@ function [] = analyse_data(files,load_rois,close_figs)
             
 
 %             figure,imshow(dab_image_),colormap(dab_colormap)
+
+        
+            % REMOVE NON SLICE AREA FROM THE THRESHOLD MASK
+            dab_roi_mask(~slice_mask_roi) = 0;
+
             
             dab_image_mask = labeloverlay(dab_image_,dab_roi_mask,...
                 'Colormap',color_map,'Transparency',transparency);
