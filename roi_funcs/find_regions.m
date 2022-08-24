@@ -24,6 +24,7 @@ function [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file
     else
         rotate_slice = 0;
     end
+    rotate_slice = 1;
     
     show_figs = 0;
 
@@ -115,12 +116,13 @@ function [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file
     %% Find roi binary mask
     [roi_mask] = create_roi_h_mask(h_image);
     
-    %% Find initial DG regions    
+    %% Find initial DG regions
     if rotate_slice
-        [dg_regions,dg_centroids] = find_mask_dg(roi_mask);
+%         [dg_regions,dg_centroids] = find_mask_dg(roi_mask);
+        [dg_regions,dg_centroids] = findDG_mask(roi_mask);
 
         %% Find angle based on dg
-        mid_point = find_dg_mid_point(dg_centroids);
+        mid_point = find_mid_point(dg_centroids);
         
         if show_figs
             plot_regions(roi_mask,dg_regions);
@@ -137,6 +139,10 @@ function [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file
         b = x2-x1;
 
         theta = -atand(a/b);
+        
+        if isnan(theta)
+            theta = 0;
+        end
 
         trans = [0,0];
         rot = [cosd(theta),sind(theta);...
@@ -156,7 +162,8 @@ function [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file
 %         [x,y] = transformPointsForward(tform,mid_point(1),mid_point(2));
 %         mid_point_rot = round([x,y]);
 
-        [dg_regions_rot,dg_centroids_rot] = find_mask_dg(roi_mask_rot);
+%         [dg_regions_rot,dg_centroids_rot] = find_mask_dg(roi_mask_rot);
+        [dg_regions_rot,dg_centroids_rot] = findDG_mask(roi_mask_rot);
         mid_point_rot = find_dg_mid_point(dg_centroids_rot);
         mid_x = mid_point_rot(1);
 
@@ -168,18 +175,23 @@ function [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file
         end
         
         %% Offset image so midline in the middle
-        new_size = size(h_image_rot);
-        mid_offset = round(new_size(2)/2-mid_x);
+        use_offset = 0;
+        mid_offset = 0;
+        
+        if use_offset
+            new_size = size(h_image_rot);
+            mid_offset = round(new_size(2)/2-mid_x);
 
-        if mid_offset > 0 % right side too large
-%             h_image_rot = h_image_rot(:,1:end-mid_offset);
-            roi_mask_offset = roi_mask_rot(:,1:end-mid_offset);
+            if mid_offset > 0 % right side too large
+    %             h_image_rot = h_image_rot(:,1:end-mid_offset);
+                roi_mask_offset = roi_mask_rot(:,1:end-mid_offset);
 
-        else % left side too large
-%             h_image_rot = h_image_rot(:,abs(mid_offset)+1:end);
-            roi_mask_offset = roi_mask_rot(:,abs(mid_offset)+1:end);
-%             mid_x = mid_x-mid_offset;
-%             mid_point_rot(1) = mid_x;
+            else % left side too large
+    %             h_image_rot = h_image_rot(:,abs(mid_offset)+1:end);
+                roi_mask_offset = roi_mask_rot(:,abs(mid_offset)+1:end);
+    %             mid_x = mid_x-mid_offset;
+    %             mid_point_rot(1) = mid_x;
+            end
         end
 
         %% Final version
@@ -199,12 +211,18 @@ function [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file
     end
     
     %% Find DG regions
-    if rotate_slice
-        % use offset roi mask to find rois correctly
-        [dg_regions,dg_centroids] = find_mask_dg(roi_mask_offset);
-    else
-        [dg_regions,dg_centroids] = find_mask_dg(roi_mask);
+    if use_offset
+        if rotate_slice
+            % use offset roi mask to find rois correctly
+%             [dg_regions,dg_centroids] = find_mask_dg(roi_mask_offset);
+            [dg_regions,dg_centroids] = findDG_mask(roi_mask_offset);
+        else
+%             [dg_regions,dg_centroids] = find_mask_dg(roi_mask);
+            [dg_regions,dg_centroids] = findDG_mask(roi_mask);
+        end
     end
+    [dg_regions,dg_centroids] = findDG_mask(roi_mask);
+    
     mid_point = find_dg_mid_point(dg_centroids);
 
     % overlay dg regions on mask
@@ -232,7 +250,7 @@ function [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file
     % overlay dg regions on h image
     fig2 = plot_regions(h_image,dg_regions);
     colormap(h_colormap)
-    plot(mid_point_rot(1),mid_point_rot(2),'r.',...
+    plot(mid_point(1),mid_point(2),'r.',...
             'MarkerSize',10)
     xline(mid_point(1),'r','LineWidth',3)
     

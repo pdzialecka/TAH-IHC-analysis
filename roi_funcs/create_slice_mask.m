@@ -54,6 +54,7 @@ function [slice_mask,slice_mask_filled,slice_region] = create_slice_mask(h_image
     %% Find the slice region
 %     slice_mask = bwpropfilt(slice_mask,'Area',[1e7,inf]);
     slice_region = regionprops(slice_mask_filled);
+    slice_region = slice_region([slice_region.Area] == max([slice_region.Area]));
     
     if show_figs
         figure,imshow(slice_mask),hold on

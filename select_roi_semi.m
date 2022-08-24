@@ -1,13 +1,9 @@
-function [rois_x,rois_y] = select_roi_auto(file_)
-    %% Automatically find and save all required ROIs for a given image
+function [rois_x,rois_y] = select_roi_semi(file_)
+    %% Select and save all required ROIs for a given image
     % @author: pdzialecka
     
     % The functions checks if a given ROI already exists for this image.
     % If it does, it skipps the condition to not override any existing ROIs
-    % -> UPDATE: at the moment ROI files are overwritten!
-    
-    % Skeleton from manual function (select_roi) kept for code continuity
-    % & easier switching between the two versions
 
     %% Default input options
 %     if ~exist('magnification','var')
@@ -33,7 +29,7 @@ function [rois_x,rois_y] = select_roi_auto(file_)
     [h_colormap,dab_colormap] = create_hdab_colormaps();
     
     %% ROIs
-    [roi_names,roi_fnames,roi_no] = get_roi_list();
+    [roi_names,roi_fnames,roi_no,roi_sizes_um] = get_roi_list();
     roi_order_no = 1:roi_no;
     
     rois_x = {};
@@ -68,7 +64,7 @@ function [rois_x,rois_y] = select_roi_auto(file_)
     end
     
     %%
-    if 1 % ~all_rois_exist
+    if ~all_rois_exist
         
         %% Load deconvolved images
         file_path = fullfile(folder,file);
@@ -77,99 +73,174 @@ function [rois_x,rois_y] = select_roi_auto(file_)
 %         tiff_file = Tiff(file_path);
 
         %% Find DG regions for each image
-        [dg_regions,dg_centroids,offset,theta,rois] = find_regions(h_image,file_,0);
-%         auto_find_rois = any(offset~=0,[1,2]);
-        auto_find_rois = 1;
-
-        %% Rotate images
-        trans = [0,0];
-        rot = [cosd(theta),sind(theta);...
-            -sind(theta),cosd(theta);];
-        tform = rigid2d(rot,trans);
+        dgs_accepted = 0;
         
-        h_image = imwarp(h_image,tform,'interp','cubic','FillValues',255);    
+        while ~dgs_accepted
+    %         [dg_regions,dg_centroids,offset] = find_regions(h_image,file_,0);
+    %         auto_find_rois = any(offset~=0,[1,2]);
+
+            fig0 = figure('units','normalized','outerposition',[0 0 1 1]);
+            imshow(h_image),colormap(h_colormap)
+            title(sprintf('Select right DG point'))
+            rdg_point_roi = drawpoint();
+
+            title(sprintf('Select left DG point'))
+            ldg_point_roi = drawpoint();
+
+            rdg_point = round(rdg_point_roi.Position);
+            ldg_point = round(ldg_point_roi.Position);
+
+            %% Calculate rotation angle
+            x1 = rdg_point(1);
+            y1 = rdg_point(2);
+            x2 = ldg_point(1);
+            y2 = ldg_point(2);
+
+            a = y2-y1;
+            b = x2-x1;
+
+            theta = -atand(a/b);
+
+            if isnan(theta)
+                theta = 0;
+            end
+
+            %% Rotate images
+            trans = [0,0];
+            rot = [cosd(theta),sind(theta);...
+                -sind(theta),cosd(theta);];
+            tform = rigid2d(rot,trans);
+
+            %% Transform dg points
+            [h_image_rot,ref] = imwarp(h_image,tform,'interp','cubic','FillValues',255);
+
+            [x1_t,y1_t] = transformPointsForward(tform,x1,y1);
+            [x2_t,y2_t] = transformPointsForward(tform,x2,y2);
+
+            % account for new img size
+            x1_t = x1_t-ref.XWorldLimits(1);
+            y1_t = y1_t-ref.YWorldLimits(1);
+            x2_t = x2_t-ref.XWorldLimits(1);
+            y2_t = y2_t-ref.YWorldLimits(1);
+
+            rdg_point_t = [x1_t,y1_t];
+            ldg_point_t = [x2_t,y2_t];
+
+            mid_point_t = find_mid_point([rdg_point_t;ldg_point_t]);
+            midline_x = mid_point_t(1);
+
+            %%
+            fig00 = figure('units','normalized','outerposition',[0 0 1 1]);
+            imshow(h_image_rot),colormap(h_colormap)
+
+            drawpoint('Position',rdg_point_t)
+            drawpoint('Position',ldg_point_t)
+            xline(midline_x,'g')
+
+            %% Accept or reject dg points
+            answer = questdlg('Do you want to accept this ROI?',...
+                'Accept DG points?','Yes','No','Yes');
+
+            % TODO: save dg point coords + calculate offset
+            switch answer
+                case 'Yes'
+                    dgs_accepted = 1;
+                case 'No'
+                    dgs_accepted = 0;
+            end
+
+            close(fig00);
+            close(fig0);
+        end
+        
+        %% Save dg points
+        
+        
+        %% Rotate images
+        h_image = h_image_rot; % imwarp(h_image,tform,'interp','cubic','FillValues',255);    
         dab_image = imwarp(dab_image,tform,'interp','cubic','FillValues',255);    
         res_image = imwarp(res_image,tform,'interp','cubic','FillValues',255);
 
-        %% Extract ROI info
-%         dg_rois = rois{1};
-%         ca1_rois = rois{2};
-%         ca3_rois = rois{3};
-%         cortex_rois = rois{4};
-        
         %% Create slice mask
         [slice_mask,slice_mask_filled] = create_slice_mask(h_image,file_);
+        
+        %% Calculate offset from first image
+        auto_find_rois = 0;
+        
+        base_dg_file = dir(fullfile(roi_folder,'*moc23*dg_points*'));
+    
+        if ~isempty(base_dg_file) && ~contains(file,'moc23') && ~find_all_rois
+            base_dg = load(fullfile(base_dg_file(1).folder,base_dg_file(1).name));
+            base_dg_centroids = base_dg.dg_centroids;
 
+            base_compare = 1;
+        else
+            base_compare = 0;
+        end
+        
         %%
-        for roi_idx = [] %1:roi_no
+        for roi_idx = 1:roi_no
 
             %% ROI folder
             fname = file_fnames{roi_idx};
-            file_roi_fname = file_roi_fnames{roi_idx};
-            roi_fname = roi_fnames{roi_idx};
+            roi_fname = file_roi_fnames{roi_idx};
+    %         data_folder = fileparts(folder);
+    %         roi_folder = find_roi_folder(data_folder);
             
-            %% ROI info
-            [coords,this_roi,coords_field] = extract_roi_coords(rois,roi_fname);
-%             if contains(roi_fname,'R')
-%                 coords_field = 'R_coords';
-%             elseif contains(roi_fname,'L')
-%                 coords_field = 'L_coords';
-%             end
-%             
-%             if contains(roi_fname,'DG')
-%                 this_roi = dg_rois;
-%             elseif contains(roi_fname,'CA1')
-%                 this_roi = ca1_rois;
-%             elseif contains(roi_fname,'CA3')
-%                 this_roi = ca3_rois;
-%             elseif contains(roi_fname,'cortex')
-%                 this_roi = cortex_rois;
-%             end
-%             
-%             coords = getfield(this_roi,coords_field);
+            %% Find ROI pixel size
+            roi_size_um = roi_sizes_um{roi_idx};
+            roi_size = round(roi_size_um/pixel_size);
+    
+            %%
+    %         fname = strcat(file(1:end-11),'_',num2str(roi_order_no(roi_idx)),'_roi_',roi_fnames{roi_idx},'.mat');
+    %         roi_fname = fullfile(roi_folder,fname);
 
             %%
-            if 1 % ~exist(file_roi_fname,'file')
+            if ~exist(roi_fname,'file')
                 %%
+%                 roi_size = round(size(dab_image)/magnification);
                 roi_accepted = 0;
                 use_auto_roi = 1;
 
                 while ~roi_accepted
-                    
                     %% Select ROI on H image
                     fig1 = figure('units','normalized','outerposition',[0 0 1 1]);
                     imshow(h_image),colormap(h_colormap)
 
                     title(sprintf('Select %s ROI',roi_names{roi_idx}))
                     
-%                     if auto_find_rois && use_auto_roi
-%                         base_roi_file = dir(fullfile(roi_folder,strcat('*moc23*',roi_fnames{roi_idx},'*.mat')));
-%                         base_roi = load(fullfile(base_roi_file(1).folder,base_roi_file(1).name)).roi;
-%                         
-%                         if contains(fname,'L')
-%                             offset_ = offset(1,:);
-%                         elseif contains(fname,'R')
-%                             offset_ = offset(2,:);
-%                         end
-%                         
-%                         roi_x_point = (base_roi.x(1)+offset_(1))+roi_size(1)/2;
-%                         roi_y_point = (base_roi.y(1)+offset_(2))+roi_size(2)/2;
-%                         roi_point = drawpoint('Position',[roi_x_point,roi_y_point]);
-%                         fprintf('Estimating %s ROI location\n',fname)
-%                         
-%                     else
-%                         roi_point = drawpoint();
-%                     end
+
+                    % roi = drawrectangle();
+                    % 
+                    % roi.Position = round(roi.Position);
+                    % roi_x = roi.Position(2):roi.Position(2)+roi.Position(4);
+                    % roi_y = roi.Position(1):roi.Position(1)+roi.Position(3);
+
+%                     roi_point = drawpoint();
+                    
+                    if auto_find_rois && use_auto_roi
+                        base_roi_file = dir(fullfile(roi_folder,strcat('*moc23*',roi_fnames{roi_idx},'*.mat')));
+                        base_roi = load(fullfile(base_roi_file(1).folder,base_roi_file(1).name)).roi;
+                        
+                        if contains(fname,'L')
+                            offset_ = offset(1,:);
+                        elseif contains(fname,'R')
+                            offset_ = offset(2,:);
+                        end
+                        
+                        roi_x_point = (base_roi.x(1)+offset_(1))+roi_size(1)/2;
+                        roi_y_point = (base_roi.y(1)+offset_(2))+roi_size(2)/2;
+                        roi_point = drawpoint('Position',[roi_x_point,roi_y_point]);
+                        fprintf('Estimating %s ROI location\n',fname)
+                        
+                    else
+                        roi_point = drawpoint();
+                    end
 
                     %%
-%                     roi_point.Position = round(roi_point.Position);
-%                     roi_x_1 = round(roi_point.Position(1)-roi_size(1)/2);
-%                     roi_y_1 = round(roi_point.Position(2)-roi_size(2)/2);
-                    
-                    roi_x_1 = coords(1);
-                    roi_y_1 = coords(2);
-                    roi_size = coords(3:4);
-                    roi_size_um = this_roi.dims_um;
+                    roi_point.Position = round(roi_point.Position);
+                    roi_x_1 = round(roi_point.Position(1)-roi_size(1)/2);
+                    roi_y_1 = round(roi_point.Position(2)-roi_size(2)/2);
 
                     roi_x = roi_x_1:roi_x_1+roi_size(1);
                     roi_y = roi_y_1:roi_y_1+roi_size(2);
@@ -187,37 +258,18 @@ function [rois_x,rois_y] = select_roi_auto(file_)
                     h_image_roi = h_image(roi_y,roi_x);
                     dab_image_roi = dab_image(roi_y,roi_x);
                     res_image_roi = res_image(roi_y,roi_x);
-                    slice_mask_roi = slice_mask(roi_y,roi_x);
 
                     fig3 = figure('units','normalized','outerposition',[0 0 1 1]);
                     ax(1) = subplot(121); imshow(h_image_roi)
                     ax(2) = subplot(122); imshow(dab_image_roi)
                     colormap(ax(1),h_colormap)
                     colormap(ax(2),dab_colormap)
-                    
-                    %% Display zoomed in ROI w slice mask
-                    h_image_roi_smask = labeloverlay(h_image_roi,~slice_mask_roi,...
-                        'Colormap',[0,0,1],'Transparency',0.7);
-                    dab_image_roi_smask = labeloverlay(dab_image_roi,~slice_mask_roi,...
-                        'Colormap',[0,0,1],'Transparency',0.7);
-                    
-                    fig4 = figure('units','normalized','outerposition',[0 0 1 1]);
-                    ax(1) = subplot(121); imshow(h_image_roi_smask)
-                    ax(2) = subplot(122); imshow(dab_image_roi_smask)
-                    colormap(ax(1),h_colormap)
-                    colormap(ax(2),dab_colormap)
-                    
-                    slice_area = sum(slice_mask_roi,[1,2]);
-                    total_area = size(h_image_roi,1)*size(h_image_roi,2);
-                    slice_area_norm = slice_area/total_area; % as % of total area
 
                     %% Accept or reject ROI
-%                     answer = questdlg('Do you want to accept this ROI?',...
-%                         'Accept ROI?','Yes','No','Yes');
+                    answer = questdlg('Do you want to accept this ROI?',...
+                        'Accept ROI?','Yes','No','Yes');
 
-                    % accept auto detected ROI
-                    answer = 'Yes';
-
+                    % Handle response
                     switch answer
                         case 'Yes'
                             roi_accepted = 1;
@@ -253,19 +305,13 @@ function [rois_x,rois_y] = select_roi_auto(file_)
 %                         fname3 = strcat(fname,'_3_H_DAB_',num2str(magnification),'x.tif');
                         fname3 = strcat(fname,'_3_H_DAB_',num2str(roi_size_um(1)),'x',num2str(roi_size_um(2)),'um.tif');
                         saveas(fig3,fullfile(roi_folder,fname3));
-                        
-                        fname4 = strcat(fname,'_3_H_DAB_',num2str(roi_size_um(1)),'x',num2str(roi_size_um(2)),'um_slice_mask.tif');
-                        saveas(fig4,fullfile(roi_folder,fname4));
-
 
                         close(fig1);
                         close(fig2);
                         close(fig3);
-                        close(fig4);
 
 
                         % roi details
-                        roi = [];
                         roi.name = roi_names{roi_idx};
                         roi.fname = roi_fnames{roi_idx};
 %                         roi.magnification = magnification;
@@ -274,12 +320,8 @@ function [rois_x,rois_y] = select_roi_auto(file_)
                         roi.x = roi_x;
                         roi.y = roi_y;
                         roi.auto_roi = auto_find_rois & use_auto_roi;
-                        
-                        roi.slice_area = slice_area;
-                        roi.total_area = total_area;
-                        roi.slice_area_norm = slice_area_norm;
 
-                        save(file_roi_fname,'roi');
+                        save(roi_fname,'roi');
                         fprintf('ROI %s saved\n',fname);
 
                         %% Save ROI image as tiff
@@ -294,6 +336,19 @@ function [rois_x,rois_y] = select_roi_auto(file_)
                                 imwrite(roi_image(:,:,i),img_fname,'Compression','none','WriteMode','append');
                             end
                         end
+
+%                         t = Tiff(img_fname,'w');
+%                         tagstruct.ImageLength = size(roi_image,1);
+%                         tagstruct.ImageWidth = size(roi_image,2);
+%                         tagstruct.Photometric = getTag(tiff_file,'Photometric');
+%                         tagstruct.Compression = getTag(tiff_file,'Compression');
+%                         tagstruct.SamplesPerPixel = 2;
+%                         tagstruct.PlanarConfiguration = getTag(tiff_file,'PlanarConfiguration');
+%                         tagstruct.BitsPerSample = getTag(tiff_file,'BitsPerSample');
+%                         
+%                         t.setTag(tagstruct);
+%                         write(t,roi_image);
+%                         close(t);
                         
                     end
                 end
@@ -303,6 +358,6 @@ function [rois_x,rois_y] = select_roi_auto(file_)
             end
         end
     else
-        fprintf('Skipping %s; all ROIs already exist\n',file);
+        fprintf('Skipping %s; all ROIs already exist\n',fname);
     end
 end

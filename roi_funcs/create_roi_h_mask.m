@@ -37,9 +37,9 @@ function [roi_mask] = create_roi_h_mask(h_image)
 
     %% Create binary dab image
     if enhance_contrast
-        thresh = (0.75*mean(mean(h_image_))); % 150;
+        thresh = (0.55*mean(mean(h_image_))); % 150;
     else
-        thresh = 200; % (0.9*mean(mean(h_image_)));
+        thresh = (0.85*mean(mean(h_image_))); % 200;
     end
 
     I = h_image_<thresh;
@@ -47,22 +47,29 @@ function [roi_mask] = create_roi_h_mask(h_image)
         figure,imshow(I)
     end
 
-    k2 = 10;
-    kernel2 = 1/(k2*k2)*ones([k2,k2]);
-    I2 = imfilter(I,kernel2,'replicate');
-
-    if show_figs
-        figure,imshow(I2)
-    end
+%     k2 = 10;
+%     kernel2 = 1/(k2*k2)*ones([k2,k2]);
+%     I2 = imfilter(I,kernel2,'replicate');
+% 
+%     if show_figs
+%         figure,imshow(I2)
+%     end
     
     %% Keep only large regions in the mask
     min_con_pixels = 10e3; % 10e3
     connectivity = 8; % default: 4
-    I3 = bwareaopen(I2,min_con_pixels,connectivity);
+    I3 = bwareaopen(I,min_con_pixels,connectivity);
     
     if show_figs
         figure,imshow(I3)
     end
+    
+    %% Resmooth mask (from Maria's code)
+    % smooth
+%     windowSize = 51;
+%     kernel = ones(windowSize) / windowSize ^ 2;
+%     blurryImage = conv2(single(I3), kernel, 'same');
+%     I3 = blurryImage > 0.3; % Rethreshold
     
     %% ROI mask
     roi_mask = I3;
