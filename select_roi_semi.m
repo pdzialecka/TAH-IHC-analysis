@@ -64,7 +64,7 @@ function [rois_x,rois_y] = select_roi_semi(file_)
     end
     
     %%
-    if ~all_rois_exist
+    if 1 % ~all_rois_exist
         
         %% Load deconvolved images
         file_path = fullfile(folder,file);
@@ -75,108 +75,125 @@ function [rois_x,rois_y] = select_roi_semi(file_)
         %% Find DG regions for each image
         dgs_accepted = 0;
         
-        while ~dgs_accepted
-    %         [dg_regions,dg_centroids,offset] = find_regions(h_image,file_,0);
-    %         auto_find_rois = any(offset~=0,[1,2]);
+        dg_fname = strcat(file(1:end-11),'_dg_points.mat');
 
-            fig0 = figure('units','normalized','outerposition',[0 0 1 1]);
-            imshow(h_image),colormap(h_colormap)
-            title(sprintf('Select right DG point'))
-            rdg_point_roi = drawpoint();
+        if ~exist(dg_fname,'file')
+            while ~dgs_accepted
+        %         [dg_regions,dg_centroids,offset] = find_regions(h_image,file_,0);
+        %         auto_find_rois = any(offset~=0,[1,2]);
 
-            title(sprintf('Select left DG point'))
-            ldg_point_roi = drawpoint();
+                fig0 = figure('units','normalized','outerposition',[0 0 1 1]);
+                imshow(h_image),colormap(h_colormap)
 
-            rdg_point = round(rdg_point_roi.Position);
-            ldg_point = round(ldg_point_roi.Position);
+                title(sprintf('Select left DG point'))
+                ldg_point_roi = drawpoint();
 
-            %% Calculate rotation angle
-            x1 = rdg_point(1);
-            y1 = rdg_point(2);
-            x2 = ldg_point(1);
-            y2 = ldg_point(2);
+                title(sprintf('Select right DG point'))
+                rdg_point_roi = drawpoint();
 
-            a = y2-y1;
-            b = x2-x1;
+                ldg_point = round(ldg_point_roi.Position);
+                rdg_point = round(rdg_point_roi.Position);
 
-            theta = -atand(a/b);
+                %% Calculate rotation angle
+                x1 = rdg_point(1);
+                y1 = rdg_point(2);
+                x2 = ldg_point(1);
+                y2 = ldg_point(2);
 
-            if isnan(theta)
-                theta = 0;
+                a = y2-y1;
+                b = x2-x1;
+
+                theta = -atand(a/b);
+
+                if isnan(theta)
+                    theta = 0;
+                end
+
+                %% Rotate images
+                trans = [0,0];
+                rot = [cosd(theta),sind(theta);...
+                    -sind(theta),cosd(theta);];
+                tform = rigid2d(rot,trans);
+
+                %% Transform dg points
+                [h_image_rot,ref] = imwarp(h_image,tform,'interp','cubic','FillValues',255);
+
+                [x1_t,y1_t] = transformPointsForward(tform,x1,y1);
+                [x2_t,y2_t] = transformPointsForward(tform,x2,y2);
+
+                % account for new img size
+                x1_t = x1_t-ref.XWorldLimits(1);
+                y1_t = y1_t-ref.YWorldLimits(1);
+                x2_t = x2_t-ref.XWorldLimits(1);
+                y2_t = y2_t-ref.YWorldLimits(1);
+
+                rdg_point_t = [x1_t,y1_t];
+                ldg_point_t = [x2_t,y2_t];
+
+                mid_point_t = find_mid_point([ldg_point_t;rdg_point_t]);
+                midline_x = mid_point_t(1);
+
+                %%
+                fig00 = figure('units','normalized','outerposition',[0 0 1 1]);
+                imshow(h_image_rot),colormap(h_colormap)
+
+                drawpoint('Position',ldg_point_t);
+                drawpoint('Position',rdg_point_t);
+                xline(midline_x,'g')
+
+                %% Accept or reject dg points
+                answer = questdlg('Do you want to accept this ROI?',...
+                    'Accept DG points?','Yes','No','Yes');
+
+                % TODO: save dg point coords + calculate offset
+                switch answer
+                    case 'Yes'
+                        ldg_point = ldg_point_t;
+                        rdg_point = rdg_point_t;
+                        dgs_accepted = 1;
+                    case 'No'
+                        dgs_accepted = 0;
+                end
+
+                close(fig00);
+                close(fig0);
             end
-
-            %% Rotate images
-            trans = [0,0];
-            rot = [cosd(theta),sind(theta);...
-                -sind(theta),cosd(theta);];
-            tform = rigid2d(rot,trans);
-
-            %% Transform dg points
-            [h_image_rot,ref] = imwarp(h_image,tform,'interp','cubic','FillValues',255);
-
-            [x1_t,y1_t] = transformPointsForward(tform,x1,y1);
-            [x2_t,y2_t] = transformPointsForward(tform,x2,y2);
-
-            % account for new img size
-            x1_t = x1_t-ref.XWorldLimits(1);
-            y1_t = y1_t-ref.YWorldLimits(1);
-            x2_t = x2_t-ref.XWorldLimits(1);
-            y2_t = y2_t-ref.YWorldLimits(1);
-
-            rdg_point_t = [x1_t,y1_t];
-            ldg_point_t = [x2_t,y2_t];
-
-            mid_point_t = find_mid_point([rdg_point_t;ldg_point_t]);
-            midline_x = mid_point_t(1);
-
-            %%
-            fig00 = figure('units','normalized','outerposition',[0 0 1 1]);
-            imshow(h_image_rot),colormap(h_colormap)
-
-            drawpoint('Position',rdg_point_t)
-            drawpoint('Position',ldg_point_t)
-            xline(midline_x,'g')
-
-            %% Accept or reject dg points
-            answer = questdlg('Do you want to accept this ROI?',...
-                'Accept DG points?','Yes','No','Yes');
-
-            % TODO: save dg point coords + calculate offset
-            switch answer
-                case 'Yes'
-                    dgs_accepted = 1;
-                case 'No'
-                    dgs_accepted = 0;
-            end
-
-            close(fig00);
-            close(fig0);
+        
+        else
+            dg_points = load(dg_fname);
+            ldg_point = dg_points.ldg_point;
+            rdg_point = dg_points.rdg_point;
+            theta = dg_points.theta;
         end
         
-        %% Save dg points
-        
-        
         %% Rotate images
-        h_image = h_image_rot; % imwarp(h_image,tform,'interp','cubic','FillValues',255);    
+        h_image = imwarp(h_image,tform,'interp','cubic','FillValues',255);    
         dab_image = imwarp(dab_image,tform,'interp','cubic','FillValues',255);    
         res_image = imwarp(res_image,tform,'interp','cubic','FillValues',255);
 
         %% Create slice mask
+        % TODO: into separate func, on a composite image?
         [slice_mask,slice_mask_filled] = create_slice_mask(h_image,file_);
         
         %% Calculate offset from first image
-        auto_find_rois = 0;
+%         auto_find_rois = 0;
         
         base_dg_file = dir(fullfile(roi_folder,'*moc23*dg_points*'));
     
-        if ~isempty(base_dg_file) && ~contains(file,'moc23') && ~find_all_rois
+        if ~isempty(base_dg_file) && ~contains(file,'moc23')
             base_dg = load(fullfile(base_dg_file(1).folder,base_dg_file(1).name));
-            base_dg_centroids = base_dg.dg_centroids;
+            base_rdg_point = base_dg.rdg_point;
+            base_ldg_point = base_dg.ldg_point;
 
-            base_compare = 1;
+            auto_find_rois = 1;
+            offset = [ldg_point;rdg_point] - [base_ldg_point;base_rdg_point];
         else
-            base_compare = 0;
+            auto_find_rois = 0;
+            offset = [0 0; 0 0];
         end
+        
+        %% Save dg points
+        save(fullfile(roi_folder,dg_fname),'ldg_point','rdg_point','theta','offset');
         
         %%
         for roi_idx = 1:roi_no

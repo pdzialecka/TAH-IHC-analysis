@@ -23,8 +23,8 @@ summarise = 0;
 
 %% Analysis settings
 % magnification = 20;
-roi_size_um = [500,500]; % 500 x 500 um
-all_img_types = {'moc23','12f4','ct695','iba1','gfap','cfos','ki67'};
+% roi_size_um = [500,500]; % 500 x 500 um
+all_img_types = {'moc23','12f4','ct695','iba1','gfap','cfos','ki67','dcx'};
 img_type = 'moc23'; % specific analysis
 
 %% Cohort case
@@ -52,9 +52,9 @@ for cohort_idx = 1:length(cohort_folders)
         %% Deconvolve all files inside a folder
         if deconvolve
             files = dir(fullfile(data_folder,'*','*.svs'));
-            if cohort_idx == 3
-                files = files(19:end);
-            end
+%             if cohort_idx == 3
+%                 files = files(19:end);
+%             end
             deconvolve_full(files);
 
             cd(analysis_folder);
@@ -90,9 +90,18 @@ for cohort_idx = 1:length(cohort_folders)
                 files = rearrange_files(files,all_img_types);
                 
                 for idx = 1:length(files)
-                    file_ = files(idx);
-%                     select_roi(file_,roi_size_um);
-                    select_roi_auto(file_);
+                    tic
+                    try
+                        file_ = files(idx);
+%                         select_roi(file_,roi_size_um);
+                        select_roi_semi(file_);
+%                         select_roi_auto(file_);
+                    catch e
+                        file_.name
+                        fprintf(1,'The identifier was:\n%s',e.identifier);
+                        fprintf(1,'There was an error! The message was:\n%s',e.message);
+                    end
+                    toc
                 end
             end
             

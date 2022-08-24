@@ -63,64 +63,72 @@ function [] = deconvolve_full(files,save_images)
             if ~exist(save_folder)
                 mkdir(save_folder);
             end
+            
+            %% Check if the file exists
+            fname_2 = fullfile(save_folder,strcat(file(1:end-4),'_deconv.tif'));
+            
+            %%
+            if ~exist(fname_2,'file')
 
-            %% Load RGB svs file
-            fname = fullfile(folder,file);
-            image_RGB = imread(fname);
+                %% Load RGB svs file
+                fname = fullfile(folder,file);
+                image_RGB = imread(fname);
 
-            % Save as tiff
-            % imwrite(a,strcat(fname(1:end-4),'.tif'));
+                % Save as tiff
+                % imwrite(a,strcat(fname(1:end-4),'.tif'));
 
-            %% Open file in Fiji
-            imp = copytoImagePlus(image_RGB);
-            imp.show();
+                %% Open file in Fiji
+                imp = copytoImagePlus(image_RGB);
+                imp.show();
 
-            % MIJ.createColor('img_small') % doesn't work for an unknown reason
-            % MIJ.createImage(img_small); % grayscale only
+                % MIJ.createColor('img_small') % doesn't work for an unknown reason
+                % MIJ.createImage(img_small); % grayscale only
 
-            %% Color deconvolution in Fiji
-            MIJ.run("RGB Color");
-            imp.close();
+                %% Color deconvolution in Fiji
+                MIJ.run("RGB Color");
+                imp.close();
 
-            MIJ.run("Colour Deconvolution", "vectors=[H DAB]");
+                MIJ.run("Colour Deconvolution", "vectors=[H DAB]");
 
-            %% Save results
-            % Save combined tif file
-            MIJ.selectWindow("new (RGB)")
-            if save_images
-                fname_1 = fullfile(save_folder,strcat(file(1:end-4),'.tif'));
-                IJ.save(fname_1)
+                %% Save results
+                % Save combined tif file
+                MIJ.selectWindow("new (RGB)")
+                if save_images
+                    fname_1 = fullfile(save_folder,strcat(file(1:end-4),'.tif'));
+                    IJ.save(fname_1)
+                end
+                MIJ.run("Close")
+
+
+                % this ensures file saved as 8-bit
+                MIJ.selectWindow("Colour Deconvolution")
+                MIJ.run("Close")
+
+
+                % Save deconvolved images as a stack
+                MIJ.run("Images to Stack", "use");
+                MIJ.run("Grays");
+                % MIJ.run("Delete Slice"); % remove color info slice -> this will save img as RGB
+
+                if save_images
+                    fname_2 = fullfile(save_folder,strcat(file(1:end-4),'_deconv.tif'));
+                    IJ.save(fname_2)
+                end
+
+                %% Alternatively, send images back to Matlab and save from here
+                % very slow for large images (full frame)
+                % image_h = MIJ.getImage("new (RGB)-(Colour_1)");
+                % image_dab = MIJ.getImage("new (RGB)-(Colour_2)");
+                % image_res = MIJ.getImage("new (RGB)-(Colour_3)");
+
+                % image_h = uint8(image_h);
+                % image_dab = uint8(image_dab);
+                % image_res = uint8(image_res);
+
+                %% Close all windows
+                MIJ.closeAllWindows;
+            
             end
-            MIJ.run("Close")
-
-
-            % this ensures file saved as 8-bit
-            MIJ.selectWindow("Colour Deconvolution")
-            MIJ.run("Close")
-
-
-            % Save deconvolved images as a stack
-            MIJ.run("Images to Stack", "use");
-            MIJ.run("Grays");
-            % MIJ.run("Delete Slice"); % remove color info slice -> this will save img as RGB
-
-            if save_images
-                fname_2 = fullfile(save_folder,strcat(file(1:end-4),'_deconv.tif'));
-                IJ.save(fname_2)
-            end
-
-            %% Alternatively, send images back to Matlab and save from here
-            % very slow for large images (full frame)
-            % image_h = MIJ.getImage("new (RGB)-(Colour_1)");
-            % image_dab = MIJ.getImage("new (RGB)-(Colour_2)");
-            % image_res = MIJ.getImage("new (RGB)-(Colour_3)");
-
-            % image_h = uint8(image_h);
-            % image_dab = uint8(image_dab);
-            % image_res = uint8(image_res);
-
-            %% Close all windows
-            MIJ.closeAllWindows;
             
         catch
             fprintf('ERROR: File %s was not deconvolved\n',file);
