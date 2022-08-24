@@ -145,12 +145,16 @@ function [rois_x,rois_y] = select_roi_semi(file_)
                 answer = questdlg('Do you want to accept this ROI?',...
                     'Accept DG points?','Yes','No','Yes');
 
-                % TODO: save dg point coords + calculate offset
+                % TODO: save fig00
                 switch answer
                     case 'Yes'
                         ldg_point = ldg_point_t;
                         rdg_point = rdg_point_t;
                         dgs_accepted = 1;
+                        
+%                         fname00 = strcat(fname,'_rotation.tif');
+%                         saveas(fig00,fullfile(roi_folder,fname00));
+                        
                     case 'No'
                         dgs_accepted = 0;
                 end
@@ -196,11 +200,15 @@ function [rois_x,rois_y] = select_roi_semi(file_)
         save(fullfile(roi_folder,dg_fname),'ldg_point','rdg_point','theta','offset');
         
         %%
+        landmark_select = 1;
+        
+        %%
         for roi_idx = 1:roi_no
 
             %% ROI folder
             fname = file_fnames{roi_idx};
             roi_fname = file_roi_fnames{roi_idx};
+            roi_name = roi_names{roi_idx};
     %         data_folder = fileparts(folder);
     %         roi_folder = find_roi_folder(data_folder);
             
@@ -226,14 +234,14 @@ function [rois_x,rois_y] = select_roi_semi(file_)
 
                     title(sprintf('Select %s ROI',roi_names{roi_idx}))
                     
-
-                    % roi = drawrectangle();
-                    % 
-                    % roi.Position = round(roi.Position);
-                    % roi_x = roi.Position(2):roi.Position(2)+roi.Position(4);
-                    % roi_y = roi.Position(1):roi.Position(1)+roi.Position(3);
-
-%                     roi_point = drawpoint();
+                    % draw reference points + lines
+                    if contains(roi_name,'Left')
+                        drawpoint('Position',ldg_point);
+                        xline(ldg_point(1),'k--','LineWidth',2)
+                    else
+                        drawpoint('Position',rdg_point);
+                        xline(rdg_point(1),'k--','LineWidth',2)
+                    end
                     
                     if auto_find_rois && use_auto_roi
                         base_roi_file = dir(fullfile(roi_folder,strcat('*moc23*',roi_fnames{roi_idx},'*.mat')));
@@ -251,25 +259,88 @@ function [rois_x,rois_y] = select_roi_semi(file_)
                         fprintf('Estimating %s ROI location\n',fname)
                         
                     else
-                        roi_point = drawpoint();
+                        if landmark_select
+                            if ~contains(roi_name,'DG')
+                                roi_point = drawpoint();
+                            elseif strcmp(roi_name,'Left DG')
+                                roi_point = drawpoint('Position',ldg_point);
+                            elseif strcmp(roi_name,'Right DG')
+                                roi_point = drawpoint('Position',rdg_point);
+                            end
+                        else
+                            roi_point = drawpoint();
+                        end
                     end
 
                     %%
                     roi_point.Position = round(roi_point.Position);
-                    roi_x_1 = round(roi_point.Position(1)-roi_size(1)/2);
-                    roi_y_1 = round(roi_point.Position(2)-roi_size(2)/2);
+                    
+                    if landmark_select
+                        % start = upper left corner on the pic
+                        
+                        cortex_ca1_h = um_to_pixel(100);
+                        
+                        if strcmp(roi_name,'Left DG')
+                            roi_x_1 = round(ldg_point(1)-roi_size(1)/2);
+                            roi_y_1 = round(ldg_point(2)-roi_size(2)/2);
 
+                        elseif strcmp(roi_name,'Right DG')
+                            roi_x_1 = round(rdg_point(1)-roi_size(1)/2);
+                            roi_y_1 = round(rdg_point(2)-roi_size(2)/2);
+
+                        elseif strcmp(roi_name,'Left CA1')
+                            % ROI aligned with DG ROI
+                            roi_point.Position(1) = ldg_point(1);
+                            
+                            % 25% of ROI above CA1 point, 75% below
+                            roi_x_1 = round(roi_point.Position(1)-roi_size(1)/2);
+                            roi_y_1 = roi_point.Position(2) - round(roi_size(2)*0.3);
+                            
+                        elseif strcmp(roi_name,'Right CA1')
+                            roi_point.Position(1) = rdg_point(1);
+                            
+                            roi_x_1 = round(roi_point.Position(1)-roi_size(1)/2);
+                            roi_y_1 = roi_point.Position(2) - round(roi_size(2)*0.3);
+                            
+                        elseif strcmp(roi_name,'Left CA3')
+                            % point is in the middle of ROI
+                            roi_x_1 = round(roi_point.Position(1)-roi_size(1)/2);
+                            roi_y_1 = round(roi_point.Position(2)-roi_size(2)/2);
+                            
+                        elseif strcmp(roi_name,'Right CA3')
+                            roi_x_1 = round(roi_point(1).Position(1)-roi_size(1)/2);
+                            roi_y_1 = round(roi_point(2).Position(1)-roi_size(2)/2);
+                            
+                        elseif strcmp(roi_name,'Left Cortex')
+                            roi_point.Position(1) = ldg_point(1);
+                            
+                            % ROI 100 um below slice edge
+                            roi_x_1 = round(roi_point.Position(1)-roi_size(1)/2);
+                            roi_y_1 = round(roi_point.Position(2)+cortex_ca1_h);
+                            
+                        elseif strcmp(roi_name,'Right Cortex')
+                            roi_point.Position(1) = rdg_point(1);
+                            
+                            roi_x_1 = round(roi_point.Position(1)-roi_size(1)/2);
+                            roi_y_1 = round(roi_point.Position(2)+cortex_ca1_h);
+                       end
+                        
+                    else
+                        roi_x_1 = round(roi_point.Position(1)-roi_size(1)/2);
+                        roi_y_1 = round(roi_point.Position(2)-roi_size(2)/2);
+                    end
+                    
                     roi_x = roi_x_1:roi_x_1+roi_size(1);
                     roi_y = roi_y_1:roi_y_1+roi_size(2);
-
+                    
                     roi_rect = drawrectangle('Position',[roi_x_1,roi_y_1,roi_size(1),roi_size(2)]);
-                    title(sprintf('%s ROI',roi_names{roi_idx}));
+                    title(sprintf('%s ROI',roi_name));
                     
                     %% Diplay ROI on DAB image
                     fig2 = figure('units','normalized','outerposition',[0 0 1 1]);
                     imshow(dab_image),colormap(dab_colormap)
                     roi_rect = drawrectangle('Position',[roi_x_1,roi_y_1,roi_size(1),roi_size(2)]);
-                    title(sprintf('%s ROI',roi_names{roi_idx}));
+                    title(sprintf('%s ROI',roi_name));
 
                     %% Display zoomed in ROI selected
                     h_image_roi = h_image(roi_y,roi_x);
@@ -281,6 +352,7 @@ function [rois_x,rois_y] = select_roi_semi(file_)
                     ax(2) = subplot(122); imshow(dab_image_roi)
                     colormap(ax(1),h_colormap)
                     colormap(ax(2),dab_colormap)
+                    sgtitle(roi_name)
 
                     %% Accept or reject ROI
                     answer = questdlg('Do you want to accept this ROI?',...
