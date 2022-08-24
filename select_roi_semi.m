@@ -64,7 +64,7 @@ function [rois_x,rois_y] = select_roi_semi(file_)
     end
     
     %%
-    if 1 % ~all_rois_exist
+    if ~all_rois_exist
         
         %% Load deconvolved images
         file_path = fullfile(folder,file);
@@ -74,15 +74,15 @@ function [rois_x,rois_y] = select_roi_semi(file_)
 
         %% Find DG regions for each image
         dgs_accepted = 0;
-        
         dg_fname = strcat(file(1:end-11),'_dg_points.mat');
+        dg_fname_full = fullfile(roi_folder,dg_fname);
 
-        if ~exist(dg_fname,'file')
+        if ~exist(dg_fname_full,'file')
             while ~dgs_accepted
         %         [dg_regions,dg_centroids,offset] = find_regions(h_image,file_,0);
         %         auto_find_rois = any(offset~=0,[1,2]);
 
-                fig0 = figure('units','normalized','outerposition',[0 0 1 1]);
+                fig00 = figure('units','normalized','outerposition',[0 0 1 1]);
                 imshow(h_image),colormap(h_colormap)
 
                 title(sprintf('Select left DG point'))
@@ -109,11 +109,8 @@ function [rois_x,rois_y] = select_roi_semi(file_)
                     theta = 0;
                 end
 
-                %% Rotate images
-                trans = [0,0];
-                rot = [cosd(theta),sind(theta);...
-                    -sind(theta),cosd(theta);];
-                tform = rigid2d(rot,trans);
+                %% Calculate transform matrix
+                tform = create_tform(theta);
 
                 %% Transform dg points
                 [h_image_rot,ref] = imwarp(h_image,tform,'interp','cubic','FillValues',255);
@@ -133,13 +130,13 @@ function [rois_x,rois_y] = select_roi_semi(file_)
                 mid_point_t = find_mid_point([ldg_point_t;rdg_point_t]);
                 midline_x = mid_point_t(1);
 
-                %%
-                fig00 = figure('units','normalized','outerposition',[0 0 1 1]);
+                %% Visualise
+                fig0 = figure('units','normalized','outerposition',[0 0 1 1]);
                 imshow(h_image_rot),colormap(h_colormap)
 
                 drawpoint('Position',ldg_point_t);
                 drawpoint('Position',rdg_point_t);
-                xline(midline_x,'g')
+                xline(midline_x,'k','LineWidth',3)
 
                 %% Accept or reject dg points
                 answer = questdlg('Do you want to accept this ROI?',...
@@ -152,8 +149,8 @@ function [rois_x,rois_y] = select_roi_semi(file_)
                         rdg_point = rdg_point_t;
                         dgs_accepted = 1;
                         
-%                         fname00 = strcat(fname,'_rotation.tif');
-%                         saveas(fig00,fullfile(roi_folder,fname00));
+                        fname0 = strcat(file(1:end-11),'_rotation.tif');
+                        saveas(fig0,fullfile(roi_folder,fname0));
                         
                     case 'No'
                         dgs_accepted = 0;
@@ -164,10 +161,12 @@ function [rois_x,rois_y] = select_roi_semi(file_)
             end
         
         else
-            dg_points = load(dg_fname);
+            dg_points = load(dg_fname_full);
             ldg_point = dg_points.ldg_point;
             rdg_point = dg_points.rdg_point;
             theta = dg_points.theta;
+            
+            tform = create_tform(theta);
         end
         
         %% Rotate images
@@ -176,8 +175,8 @@ function [rois_x,rois_y] = select_roi_semi(file_)
         res_image = imwarp(res_image,tform,'interp','cubic','FillValues',255);
 
         %% Create slice mask
-        % TODO: into separate func, on a composite image?
-        [slice_mask,slice_mask_filled] = create_slice_mask(h_image,file_);
+        % in a separate function now, on the composite image
+%         [slice_mask,slice_mask_filled] = create_slice_mask(h_image,file_);
         
         %% Calculate offset from first image
 %         auto_find_rois = 0;
@@ -197,7 +196,7 @@ function [rois_x,rois_y] = select_roi_semi(file_)
         end
         
         %% Save dg points
-        save(fullfile(roi_folder,dg_fname),'ldg_point','rdg_point','theta','offset');
+        save(dg_fname_full,'ldg_point','rdg_point','theta','offset');
         
         %%
         landmark_select = 1;
@@ -259,17 +258,17 @@ function [rois_x,rois_y] = select_roi_semi(file_)
                         fprintf('Estimating %s ROI location\n',fname)
                         
                     else
-                        if landmark_select
-                            if ~contains(roi_name,'DG')
-                                roi_point = drawpoint();
-                            elseif strcmp(roi_name,'Left DG')
-                                roi_point = drawpoint('Position',ldg_point);
-                            elseif strcmp(roi_name,'Right DG')
-                                roi_point = drawpoint('Position',rdg_point);
-                            end
-                        else
+%                         if landmark_select
+                        if ~contains(roi_name,'DG')
                             roi_point = drawpoint();
+                        elseif strcmp(roi_name,'Left DG')
+                            roi_point = drawpoint('Position',ldg_point);
+                        elseif strcmp(roi_name,'Right DG')
+                            roi_point = drawpoint('Position',rdg_point);
                         end
+%                         else
+%                             roi_point = drawpoint();
+%                         end
                     end
 
                     %%
@@ -281,12 +280,12 @@ function [rois_x,rois_y] = select_roi_semi(file_)
                         cortex_ca1_h = um_to_pixel(100);
                         
                         if strcmp(roi_name,'Left DG')
-                            roi_x_1 = round(ldg_point(1)-roi_size(1)/2);
-                            roi_y_1 = round(ldg_point(2)-roi_size(2)/2);
+                            roi_x_1 = round(roi_point.Position(1)-roi_size(1)/2);
+                            roi_y_1 = round(roi_point.Position(2)-roi_size(2)/2);
 
                         elseif strcmp(roi_name,'Right DG')
-                            roi_x_1 = round(rdg_point(1)-roi_size(1)/2);
-                            roi_y_1 = round(rdg_point(2)-roi_size(2)/2);
+                            roi_x_1 = round(roi_point.Position(1)-roi_size(1)/2);
+                            roi_y_1 = round(roi_point.Position(2)-roi_size(2)/2);
 
                         elseif strcmp(roi_name,'Left CA1')
                             % ROI aligned with DG ROI
@@ -308,8 +307,8 @@ function [rois_x,rois_y] = select_roi_semi(file_)
                             roi_y_1 = round(roi_point.Position(2)-roi_size(2)/2);
                             
                         elseif strcmp(roi_name,'Right CA3')
-                            roi_x_1 = round(roi_point(1).Position(1)-roi_size(1)/2);
-                            roi_y_1 = round(roi_point(2).Position(1)-roi_size(2)/2);
+                            roi_x_1 = round(roi_point.Position(1)-roi_size(1)/2);
+                            roi_y_1 = round(roi_point.Position(2)-roi_size(2)/2);
                             
                         elseif strcmp(roi_name,'Left Cortex')
                             roi_point.Position(1) = ldg_point(1);

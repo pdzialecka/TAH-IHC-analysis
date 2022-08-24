@@ -1,5 +1,5 @@
-function [slice_mask,slice_mask_filled,slice_region] = create_slice_mask(h_image,file_)
-    %% Create slice mask based on the h_image
+function [slice_mask,slice_mask_filled,slice_region] = create_slice_mask(image,file_)
+    %% Create slice mask based on image
     % @author: pdzialecka
     
     % The function should be used on rotated h_image (if auto rois selected)
@@ -12,7 +12,7 @@ function [slice_mask,slice_mask_filled,slice_region] = create_slice_mask(h_image
     [roi_folder,~] = find_roi_folder(file_.folder);
 
     %% Find the slice mask
-    slice_mask = h_image < 240; % ones(size(I));
+    slice_mask = image < 240; % ones(size(I));
     k3 = 20;
     kernel3 = 1/(k3*k3)*ones([k3,k3]);
     slice_mask = imfilter(slice_mask,kernel3,'replicate');
@@ -35,12 +35,13 @@ function [slice_mask,slice_mask_filled,slice_region] = create_slice_mask(h_image
 %     end
 
     %% Visualise inverse of the slice mask found
-    h_image_slice_mask = labeloverlay(h_image,~slice_mask,...
+    h_image_slice_mask = labeloverlay(image,~slice_mask,...
         'Colormap',[0,0,1],'Transparency',0.7);
     fig = figure;
     imshow(h_image_slice_mask)
     
-    fname = strcat(file(1:end-11),'_slice_mask.tif');
+%     fname = strcat(file(1:end-11),'_slice_mask.tif'); % for h_image
+    fname = strcat(file(1:end-4),'_slice_mask.tif');
     saveas(fig,fullfile(roi_folder,fname));
     close(fig);
     
@@ -72,14 +73,15 @@ function [slice_mask,slice_mask_filled,slice_region] = create_slice_mask(h_image
         new_slice_mask(remove_mask) = 0;
         
         % Replot the slice mask figure
-        h_image_slice_mask = labeloverlay(h_image,~slice_mask,...
+        h_image_slice_mask = labeloverlay(image,~slice_mask,...
             'Colormap',[0,0,1],'Transparency',0.7);
         h_image_slice_mask_2 = labeloverlay(h_image_slice_mask,remove_mask,...
             'Colormap',[1,0,0],'Transparency',0.7);
         
         fig = figure;
         imshow(h_image_slice_mask_2)
-        fname = strcat(file(1:end-11),'_slice_mask.tif');
+%         fname = strcat(file(1:end-11),'_slice_mask.tif');
+        fname = strcat(file(1:end-4),'_slice_mask.tif');
         saveas(fig,fullfile(roi_folder,fname));
         close(fig);
         
@@ -90,7 +92,8 @@ function [slice_mask,slice_mask_filled,slice_region] = create_slice_mask(h_image
     
         
     %% Save masks
-    mask_fname = strcat(file(1:end-11),'_slice_mask.mat');
+%     mask_fname = strcat(file(1:end-11),'_slice_mask.mat');
+    mask_fname = strcat(file(1:end-4),'_slice_mask.mat');
     save(fullfile(roi_folder,mask_fname),'slice_mask','slice_mask_filled',...
         'slice_region');
     

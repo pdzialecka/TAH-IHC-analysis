@@ -90,21 +90,24 @@ for cohort_idx = 1:length(cohort_folders)
                 files = rearrange_files(files,all_img_types);
                 
                 for idx = 1:length(files)
-                    tic
-                    try
-                        file_ = files(idx);
-%                         select_roi(file_,roi_size_um);
-                        select_roi_semi(file_);
-%                         select_roi_auto(file_);
-                    catch e
-                        file_.name
-                        fprintf(1,'The identifier was:\n%s',e.identifier);
-                        fprintf(1,'There was an error! The message was:\n%s',e.message);
-                    end
-                    toc
+                    file_ = files(idx);
+%                     select_roi(file_,roi_size_um);
+                    select_roi_semi(file_);
+%                     select_roi_auto(file_);
                 end
             end
             
+        end
+        
+        %% Create slice mask (run before + after artefact removal)
+        if create_mask
+            
+            % mask made of composite image
+            all_files = dir(fullfile(processed_folder,'**',strcat('*.tif')));
+            keep_idxs = ~contains({all_files.name}','deconv');
+            files = all_files(keep_idxs);
+            
+            create_slice_masks(files);
         end
 
         %% Analyse all data or that from one antibody only
