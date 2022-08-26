@@ -1,4 +1,4 @@
-function [rois_x,rois_y] = select_roi_semi(file_)
+function [rois_x,rois_y] = select_roi_semi(file_,use_auto_roi)
     %% Select and save all required ROIs for a given image
     % @author: pdzialecka
     
@@ -13,6 +13,10 @@ function [rois_x,rois_y] = select_roi_semi(file_)
 %     if ~exist('roi_size','var')
 %         roi_size_um = [500,500]; % in um
 %     end
+
+    if ~exist('use_auto_roi','var')
+        use_auto_roi = 1;
+    end
     
     %%
     pixel_size = 0.504; % um
@@ -200,6 +204,7 @@ function [rois_x,rois_y] = select_roi_semi(file_)
         
         %%
         landmark_select = 1;
+        cortex_ca1_h = um_to_pixel(100);
         
         %%
         for roi_idx = 1:roi_no
@@ -224,7 +229,7 @@ function [rois_x,rois_y] = select_roi_semi(file_)
                 %%
 %                 roi_size = round(size(dab_image)/magnification);
                 roi_accepted = 0;
-                use_auto_roi = 1;
+%                 use_auto_roi = 1;
 
                 while ~roi_accepted
                     %% Select ROI on H image
@@ -252,8 +257,21 @@ function [rois_x,rois_y] = select_roi_semi(file_)
                             offset_ = offset(2,:);
                         end
                         
-                        roi_x_point = (base_roi.x(1)+offset_(1))+roi_size(1)/2;
-                        roi_y_point = (base_roi.y(1)+offset_(2))+roi_size(2)/2;
+                        if landmark_select
+                            if contains(roi_name,'CA1')
+                                roi_x_point = (base_roi.x(1)+offset_(1))+roi_size(1)/2;
+                                roi_y_point = (base_roi.y(1)+offset_(2))+roi_size(2)*0.25;
+                            elseif contains(roi_name,'Cortex')
+                                roi_x_point = (base_roi.x(1)+offset_(1))+roi_size(1)/2;
+                                roi_y_point = round(base_roi.y(1)+offset_(2)-cortex_ca1_h);
+                            else % DG & CA3
+                                roi_x_point = (base_roi.x(1)+offset_(1))+roi_size(1)/2;
+                                roi_y_point = (base_roi.y(1)+offset_(2))+roi_size(2)/2;
+                            end
+                        else
+                                roi_x_point = (base_roi.x(1)+offset_(1))+roi_size(1)/2;
+                                roi_y_point = (base_roi.y(1)+offset_(2))+roi_size(2)/2;
+                        end
                         roi_point = drawpoint('Position',[roi_x_point,roi_y_point]);
                         fprintf('Estimating %s ROI location\n',fname)
                         
@@ -276,9 +294,7 @@ function [rois_x,rois_y] = select_roi_semi(file_)
                     
                     if landmark_select
                         % start = upper left corner on the pic
-                        
-                        cortex_ca1_h = um_to_pixel(100);
-                        
+                                                
                         if strcmp(roi_name,'Left DG')
                             roi_x_1 = round(roi_point.Position(1)-roi_size(1)/2);
                             roi_y_1 = round(roi_point.Position(2)-roi_size(2)/2);
@@ -293,13 +309,13 @@ function [rois_x,rois_y] = select_roi_semi(file_)
                             
                             % 25% of ROI above CA1 point, 75% below
                             roi_x_1 = round(roi_point.Position(1)-roi_size(1)/2);
-                            roi_y_1 = roi_point.Position(2) - round(roi_size(2)*0.3);
+                            roi_y_1 = roi_point.Position(2) - round(roi_size(2)*0.25);
                             
                         elseif strcmp(roi_name,'Right CA1')
                             roi_point.Position(1) = rdg_point(1);
                             
                             roi_x_1 = round(roi_point.Position(1)-roi_size(1)/2);
-                            roi_y_1 = roi_point.Position(2) - round(roi_size(2)*0.3);
+                            roi_y_1 = roi_point.Position(2) - round(roi_size(2)*0.25);
                             
                         elseif strcmp(roi_name,'Left CA3')
                             % point is in the middle of ROI
@@ -354,9 +370,13 @@ function [rois_x,rois_y] = select_roi_semi(file_)
                     sgtitle(roi_name)
 
                     %% Accept or reject ROI
-                    answer = questdlg('Do you want to accept this ROI?',...
-                        'Accept ROI?','Yes','No','Yes');
-
+                    if contains(roi_name,'DG') || (use_auto_roi & any(offset~=0,[1,2]))
+                        answer = 'Yes';
+                    else
+                        answer = questdlg('Do you want to accept this ROI?',...
+                            'Accept ROI?','Yes','No','Yes');
+                    end
+                    
                     % Handle response
                     switch answer
                         case 'Yes'
@@ -378,7 +398,7 @@ function [rois_x,rois_y] = select_roi_semi(file_)
                             close(fig2);
                             close(fig3);
                     end
-
+                    
                     %% Save accepted ROI
                     if roi_accepted
 

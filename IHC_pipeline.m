@@ -24,7 +24,7 @@ summarise = 0;
 %% Analysis settings
 % magnification = 20;
 % roi_size_um = [500,500]; % 500 x 500 um
-all_img_types = {'moc23','12f4','ct695','iba1','gfap','cfos','ki67','dcx'};
+all_img_types = {'moc23','12f4','ct695','iba1','gfap','cfos','ki67','dcx','sox2'};
 img_type = 'moc23'; % specific analysis
 
 %% Cohort case
@@ -62,21 +62,6 @@ for cohort_idx = 1:length(cohort_folders)
 
         %% Pre-select all ROIs
         if select_rois
-
-%             if analyse_all
-%                 files = dir(fullfile(processed_folder,'**',strcat('*deconv.tif')));
-%             else
-%                 files = dir(fullfile(processed_folder,'**',strcat('*',img_type,'*deconv.tif')));
-%             end
-%             
-%             
-% %             files = files(1); % test file
-% 
-%             for idx = 1:length(files)
-%                 file_ = files(idx);
-%                 select_roi(file_,roi_size_um);
-%             end
-            
             
             % or select all ROIs per mouse
             mouse_pfolders = dir(processed_folder);
@@ -91,9 +76,8 @@ for cohort_idx = 1:length(cohort_folders)
                 
                 for idx = 1:length(files)
                     file_ = files(idx);
-%                     select_roi(file_,roi_size_um);
                     select_roi_semi(file_);
-%                     select_roi_auto(file_);
+%                     select_roi_semi(file_,0); % to enforce manual selection
                 end
             end
             
