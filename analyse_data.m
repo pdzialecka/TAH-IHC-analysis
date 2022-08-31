@@ -15,6 +15,11 @@ function [] = analyse_data(files,load_rois,close_figs)
     % for easier visualisation
     [h_colormap,dab_colormap] = create_hdab_colormaps();
     
+    %% Plot setts
+    pixel_size = 0.504;
+    color_map = [0,0,1];
+    transparency = 0.2;
+    
     %% ROIs
     [~,roi_fnames,roi_no] = get_roi_list();
     roi_order_no = 1:roi_no;
@@ -141,15 +146,15 @@ function [] = analyse_data(files,load_rois,close_figs)
                 'Colormap',[0,0,1],'Transparency',0.7);
 
             fig0 = figure('units','normalized','outerposition',[0 0 1 1]);
-            ax(1) = subplot(121); imshow(h_image_roi_smask)
-            ax(2) = subplot(122); imshow(dab_image_roi_smask)
+            ax(1) = subplot(211); imshow(h_image_roi_smask)
+            ax(2) = subplot(212); imshow(dab_image_roi_smask)
             colormap(ax(1),h_colormap)
             colormap(ax(2),dab_colormap)
 
             
             fname_ = strcat(file(1:end-11),'_',num2str(roi_order_no(roi_idx)),'_roi_',roi_fnames{roi_idx});
             fname0 = strcat(fname_,'_3_H_DAB_',num2str(roi_size_um(1)),'x',num2str(roi_size_um(2)),'um_slice_mask.tif');
-            saveas(fig0,fullfile(roi_folder,fname0));
+            saveas(fig0,fullfile(results_folder,fname0));
             close(fig0);
         
             %% Calculate slice area per ROI
@@ -162,7 +167,7 @@ function [] = analyse_data(files,load_rois,close_figs)
 %             roi.slice_area_norm = slice_area_norm;
 
             rois_n_area(roi_idx) = slice_area_norm;
-            
+                        
             %% Denoise images
             % This filter gets rid of most of the random pepper noise
             
@@ -170,8 +175,8 @@ function [] = analyse_data(files,load_rois,close_figs)
             % box blur applied many times = approximation of Gaussian blur
             % gaussian f requires sigma estimation and potentially larger filter size
             
-            dab_image_ = dab_image_roi;
             h_image_ = h_image_roi;
+            dab_image_ = dab_image_roi;
 
             % Spatial smoothing
             spatial_avg = 1;
@@ -200,12 +205,12 @@ function [] = analyse_data(files,load_rois,close_figs)
 
                
                 fig1 = figure('units','normalized','outerposition',[0 0 1 1]);
-                subplot(121),imshow(h_image_),colormap(h_colormap),title('Original')
-                subplot(122),imshow(h_image_f),colormap(h_colormap),title('Filtered')
+                subplot(211),imshow(h_image_),colormap(h_colormap),title('Original')
+                subplot(212),imshow(h_image_f),colormap(h_colormap),title('Filtered')
 
                 fig2 = figure('units','normalized','outerposition',[0 0 1 1]);
-                subplot(121),imshow(dab_image_),colormap(dab_colormap),title('Original')
-                subplot(122),imshow(dab_image_f),colormap(dab_colormap),title('Filtered')
+                subplot(211),imshow(dab_image_),colormap(dab_colormap),title('Original')
+                subplot(212),imshow(dab_image_f),colormap(dab_colormap),title('Filtered')
                 
                 fname1 = strcat(fname,'_1_H_filtered.tif');
                 saveas(fig1,fullfile(results_folder,fname1));
@@ -223,60 +228,89 @@ function [] = analyse_data(files,load_rois,close_figs)
                 h_image_ = h_image_f;
             end
             
+            %% Remove slice mask from images
+            h_image_roi(~slice_mask_roi) = 255;
+            dab_image_roi(~slice_mask_roi) = 255;
+            
             %%
-            if 0 & strcmp(img_type,'cfos')
+            if strcmp(img_type,'cfos') || strcmp(img_type,'ct695')
                 
-%                 h_imadjust = imadjust(h_image_); % cleanest
-%                 h_histeq = histeq(h_image_); % v dark
-%                 h_adapthisteq = adapthisteq(h_image_); % pyr layer best?
-%                 
-%                 h_image_2 = h_histeq;
-                figure,imshow(h_image_),colormap(h_colormap)
+                cell_thresh = 0.7; % 0.8 on reg image? 0.4-0.5 otherwise. 0.1 histeq
+                h_cell_mask = ~imbinarize(h_image_roi,cell_thresh);
                 
-                cell_thresh = 0.8; % 0.8 on reg image? 0.4-0.5 otherwise. 0.1 histeq
-                h_cell_mask = ~imbinarize(h_image_,cell_thresh);
-                figure,imshow(h_cell_mask)
+                k = 9;
+                kernel = 1/(k*k)*ones([k,k]);
+                h_cell_mask_2 = imfilter(h_cell_mask,kernel);
+%                 figure,imshow(h_cell_mask_2)
                 
-                % clean the mask from noise & may be ok?
-                pixel_size = 0.504;
-                min_d = 5;
-                min_pix_area = round((pi*((min_d/2)/pixel_size)^2));
+                % remove small components
+                min_d = 3;
+                min_con_pixels = round((pi*((min_d/2)/pixel_size)^2));
+                h_cell_mask_f = bwareaopen(h_cell_mask_2,min_con_pixels,8);
+                
+                h_cell_mask = h_cell_mask_f;
 
-                min_con_pixels = min_pix_area; % 20: max ~10 um long
-    %             min_con_pixels = min_pix_area;
-                connectivity = 8; % default: 4
-                h_cell_mask_f = bwareaopen(h_cell_mask,min_con_pixels,connectivity);
                 h_image_mask_f = labeloverlay(h_image_,h_cell_mask_f,...
                     'Colormap',color_map,'Transparency',transparency);
-                figure,imshow(h_image_mask_f)
                 
+                                
+                fig6 = figure('units','normalized','outerposition',[0 0 1 1]);
+                subplot(211),imshow(h_image_roi),colormap(h_colormap)
+                subplot(212),imshow(h_image_mask_f)
+                
+                fname6 = strcat(fname,'_0_H_cell_mask.tif');
+                saveas(fig6,fullfile(results_folder,fname6));
+                if close_figs
+                    close(fig6);
+                end
+                
+                h_cell_mask_area = sum(h_cell_mask_f,[1,2]);
+                avg_cell_r = 5;
+                avg_cell_area = pi*avg_cell_r^2;
+                avg_h_cell_no = round(h_cell_mask_area/avg_cell_area);
             end
             
             %% Threshold
             % white background: 255
             % areas of interest: lower pixel values
             
-            color_map = [0,0,1];
-%             color_map = [0,240,71]/255;
-            transparency = 0.2;
+%             color_map = [0,0,1];
+% %             color_map = [0,240,71]/255;
+%             transparency = 0.2;
 
             % method 1: manually chosen threshold
 %             dab_roi_mask = dab_image_ < pixel_thresh;
             dab_roi_mask = ~imbinarize(dab_image_,pixel_thresh);
             
-            % method 2: automated Otsu's threshold, can use to find approx value
-%             pixel_thresh = graythresh(dab_image_);
-%             pixel_thresh_factor = 1;
-%             pixel_thresh = pixel_thresh*pixel_thresh_factor
-%             dab_roi_mask = ~imbinarize(dab_image_,pixel_thresh);
-            
-
-%             figure,imshow(dab_image_),colormap(dab_colormap)
-
         
             % REMOVE NON SLICE AREA FROM THE THRESHOLD MASK
-            dab_roi_mask(~slice_mask_roi) = 0;
+%             dab_roi_mask(~slice_mask_roi) = 0;
 
+
+            if strcmp(img_type,'ct695')
+                % keep only intracellular app
+                dab_roi_mask_app = dab_roi_mask & h_cell_mask;
+                
+                fig7 = figure('units','normalized','outerposition',[0 0 1 1]);
+                h_image_h_mask = labeloverlay(h_image_roi,h_cell_mask,...
+                    'Colormap',[1,0,0],'Transparency',transparency);
+                h_image_h_dab_masks = labeloverlay(h_image_h_mask,dab_roi_mask,...
+                    'Colormap',[0,0,1],'Transparency',transparency);
+                h_image_final_mask = labeloverlay(h_image_roi,dab_roi_mask_app,...
+                    'Colormap',[1,0,1],'Transparency',0);
+                
+                subplot(211),imshow(h_image_h_dab_masks),title('H (red), DAB (blue)')
+                subplot(212),imshow(h_image_final_mask),title('Colocalised')
+                
+                fname7 = strcat(fname,'_3_0_H_cell_mask.tif');
+                saveas(fig7,fullfile(results_folder,fname7));
+                if close_figs
+                    close(fig7);
+                end
+                
+                dab_roi_mask = dab_roi_mask_app;
+            end
+            
             
             dab_image_mask = labeloverlay(dab_image_,dab_roi_mask,...
                 'Colormap',color_map,'Transparency',transparency);
@@ -316,8 +350,8 @@ function [] = analyse_data(files,load_rois,close_figs)
                 'Colormap',color_map,'Transparency',transparency);
 
             fig3 = figure('units','normalized','outerposition',[0 0 1 1]);
-            subplot(121),imshow(dab_image_mask),title('Threshold only')
-            subplot(122),imshow(dab_image_mask_f),title('Threshold + filtered')
+            subplot(211),imshow(dab_image_mask),title('Threshold only')
+            subplot(212),imshow(dab_image_mask_f),title('Threshold + filtered')
             
             fname3 = strcat(fname,'_3_DAB_mask_1_full.tif');
             saveas(fig3,fullfile(results_folder,fname3));
@@ -327,8 +361,8 @@ function [] = analyse_data(files,load_rois,close_figs)
             
             % alternatively, plot mask and overlay image
 %             fig3 = figure('units','normalized','outerposition',[0 0 1 1]);
-%             subplot(121),imshow(dab_roi_mask_f),title('Mask')
-%             subplot(122),imshow(dab_image_mask_f),title('Image + Filtered Mask')
+%             subplot(211),imshow(dab_roi_mask_f),title('Mask')
+%             subplot(212),imshow(dab_image_mask_f),title('Image + Filtered Mask')
 % 
 %             fname3 = strcat(fname,'_3_H_masks.tif');
 %             saveas(fig3,fullfile(results_folder,fname3));
@@ -373,8 +407,8 @@ function [] = analyse_data(files,load_rois,close_figs)
                 bw3(Ld2 == 0) = 0;
 
                 fig5 = figure('units','normalized','outerposition',[0 0 1 1]);
-                subplot(121),imshow(bw),title('Mask')
-                subplot(122),imshow(bw3),title('Mask + watershed')
+                subplot(211),imshow(bw),title('Mask')
+                subplot(212),imshow(bw3),title('Mask + watershed')
 
                 dab_roi_mask = bw3;
                 
@@ -439,7 +473,7 @@ function [] = analyse_data(files,load_rois,close_figs)
             
             
             fig4 = figure('units','normalized','outerposition',[0 0 1 1]);
-            subplot(121),hold on,title('All particles')
+            subplot(211),hold on,title('All particles')
 %             imshow(dab_roi_mask)
             imshow(dab_image_mask_f)
             
@@ -470,18 +504,18 @@ function [] = analyse_data(files,load_rois,close_figs)
 %             end
             
 
-            % create updated mask with plaques only
-            dab_roi_plaques_mask = bwpropfilt(dab_roi_mask,'Eccentricity',[0,max_eccentricity]);
+            % create updated mask with accepted cells only
+            dab_roi_mask_f = bwpropfilt(dab_roi_mask,'Eccentricity',[0,max_eccentricity]);
 %             dab_roi_plaques_mask = bwpropfilt(dab_roi_plaques_mask,'MajorAxisLength',[min_length,inf]);
-            dab_roi_plaques_mask = bwpropfilt(dab_roi_plaques_mask,'EquivDiameter',[min_length,inf]);
+            dab_roi_mask_f = bwpropfilt(dab_roi_mask_f,'EquivDiameter',[min_length,inf]);
             
-            dab_image_plaque_mask = labeloverlay(dab_image_,dab_roi_plaques_mask,...
+            dab_image_f_mask = labeloverlay(dab_image_,dab_roi_mask_f,...
                 'Colormap',color_map,'Transparency',transparency); % red
 
 %             figure,
-            subplot(122),hold on,title('Accepted particles')
+            subplot(212),hold on,title('Accepted particles')
 %             imshow(dab_roi_plaques_mask)
-            imshow(dab_image_plaque_mask)
+            imshow(dab_image_f_mask)
             
             fname4 = strcat(fname,'_3_DAB_mask_3_final.tif');
             saveas(fig4,fullfile(results_folder,fname4));
@@ -490,7 +524,7 @@ function [] = analyse_data(files,load_rois,close_figs)
             end
             
             %% Recreate mask with accepted particles only
-            particles_found = regionprops(dab_roi_plaques_mask,'Area','Centroid',...
+            particles_found = regionprops(dab_roi_mask_f,'Area','Centroid',...
                 'BoundingBox','Circularity','Eccentricity',...
                 'MajorAxisLength','EquivDiameter','Image');
             
@@ -500,12 +534,17 @@ function [] = analyse_data(files,load_rois,close_figs)
             
             % TODO: normalise number of particles by area?
             
+            %% Estimate number of cfos positive cells
+            if strcmp(img_type,'cfos')
+                pos_particle_ratio = particle_no/avg_h_cell_no;
+            end
+            
             %% Save final masks
             mask_name1 = strcat(fname,'_mask_all');
             save(fullfile(results_folder,mask_name1),'dab_roi_mask');
 %             fprintf('Mask %s saved\n',mask_name1);
 
-            dab_roi_mask = dab_roi_plaques_mask;
+            dab_roi_mask = dab_roi_mask_f;
 
             mask_name2 = strcat(fname,'_mask_accepted');
             save(fullfile(results_folder,mask_name2),'dab_roi_mask');
@@ -563,6 +602,10 @@ function [] = analyse_data(files,load_rois,close_figs)
             results.total_pixels = total_pixels;
             results.particles_found = particles_found;
             results.particle_no = particle_no;
+            
+            if strcmp(img_type,'cfos')
+                results.pos_particle_ratio = pos_particle_ratio;
+            end
             
             fname_r = strcat(fname,'_results.mat');
             save(fullfile(results_folder,fname_r),'results');

@@ -18,7 +18,7 @@ function [pixel_thresh,min_size,do_watershed] = get_antibody_threshold(antibody_
         
     elseif strcmp(antibody_type,'ct695')
         pixel_thresh = 0.65;
-        min_size = 10;
+        min_size = 1;
         do_watershed = 0;
 
     elseif strcmp(antibody_type,'cfos')
