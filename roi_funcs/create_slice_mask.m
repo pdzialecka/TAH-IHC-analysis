@@ -1,8 +1,13 @@
-function [slice_mask,slice_mask_filled,slice_region] = create_slice_mask(image,file_)
+function [slice_mask,slice_mask_filled,slice_region] = create_slice_mask(image,file_,mask_thresh)
     %% Create slice mask based on image
     % @author: pdzialecka
     
     % The function should be used on rotated h_image (if auto rois selected)
+    
+    %%
+    if ~exist('mask_thresh','var')
+        mask_thresh = 240;
+    end
     
     %%
     show_figs = 0;
@@ -12,7 +17,7 @@ function [slice_mask,slice_mask_filled,slice_region] = create_slice_mask(image,f
     [roi_folder,~] = find_roi_folder(file_.folder);
 
     %% Find the slice mask
-    slice_mask = image < 240; % ones(size(I));
+    slice_mask = image < mask_thresh;
     k3 = 20;
     kernel3 = 1/(k3*k3)*ones([k3,k3]);
     slice_mask = imfilter(slice_mask,kernel3,'replicate');
@@ -95,6 +100,6 @@ function [slice_mask,slice_mask_filled,slice_region] = create_slice_mask(image,f
 %     mask_fname = strcat(file(1:end-11),'_slice_mask.mat');
     mask_fname = strcat(file(1:end-4),'_slice_mask.mat');
     save(fullfile(roi_folder,mask_fname),'slice_mask','slice_mask_filled',...
-        'slice_region');
+        'slice_region','mask_thresh');
     
 end

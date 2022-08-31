@@ -35,7 +35,7 @@ roi_x = roi_x_1:roi_x_1+roi_size(1);
 roi_y = roi_y_1:roi_y_1+roi_size(2);
 
 %% Specify number of areas to remove
-area_no = 2;
+area_no = 1;
 
 %% Select areas to remove
 slice_mask_roi = slice_mask(roi_y,roi_x);

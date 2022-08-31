@@ -16,8 +16,9 @@ base_folder = 'C:\Users\Pat\Desktop\TAH';
 
 %% Analysis steps
 deconvolve = 0;
-select_rois = 1;
-analyse = 0;
+select_rois = 0;
+create_mask = 0;
+analyse = 1;
 analyse_all = 0;
 summarise = 0;
 
@@ -25,7 +26,7 @@ summarise = 0;
 % magnification = 20;
 % roi_size_um = [500,500]; % 500 x 500 um
 all_img_types = {'moc23','12f4','ct695','iba1','gfap','cfos','ki67','dcx','sox2'};
-img_type = 'moc23'; % specific analysis
+img_type = '12f4'; % specific analysis
 
 %% Cohort case
 cohort_case = 2; % 1 = 13mo (cohort 1), 2 = 6mo (cohorts 2-5)
@@ -106,7 +107,7 @@ for cohort_idx = 1:length(cohort_folders)
 %                 files = dir(fullfile(roi_images_folder,'**',strcat('*',image_type,'*.tif')));
             end
 
-            files = files(1); % test file
+%             files = files(1); % test file
             analyse_data(files,load_rois);
 
         end

@@ -78,6 +78,7 @@ function [] = analyse_data(files,load_rois,close_figs)
         rois_x = {};
         rois_y = {};
         rois_n_area = [];
+        rois_size_um = {};
 
         %%
         for roi_idx = 1:roi_no
@@ -92,7 +93,8 @@ function [] = analyse_data(files,load_rois,close_figs)
                     roi_file = load(roi_fname).roi;
                     rois_x{roi_idx} = roi_file.x;
                     rois_y{roi_idx} = roi_file.y;
-                    rois_n_area(roi_idx) = roi_file.slice_area_norm;
+%                     rois_n_area(roi_idx) = roi_file.slice_area_norm;
+                    rois_size_um{roi_idx} = roi_file.size_um;
                     fprintf('Successfully loaded %s ROI\n',fname);
 
                 else
@@ -111,7 +113,7 @@ function [] = analyse_data(files,load_rois,close_figs)
         %% Load slice mask
         sm_file = dir(fullfile(roi_folder,strcat('*',img_type,'*slice_mask.mat')));
         slice_mask = load(fullfile(sm_file.folder,sm_file.name)).slice_mask;
-
+       
         %% Analysis per ROI
         for roi_idx = 1:roi_no
             
@@ -130,6 +132,36 @@ function [] = analyse_data(files,load_rois,close_figs)
             roi_x = rois_x{roi_idx};
             roi_y = rois_y{roi_idx};
             slice_mask_roi = slice_mask(roi_y,roi_x);
+            roi_size_um = rois_size_um{roi_idx};
+            
+            %% Display zoomed in ROI w slice mask
+            h_image_roi_smask = labeloverlay(h_image_roi,~slice_mask_roi,...
+                'Colormap',[0,0,1],'Transparency',0.7);
+            dab_image_roi_smask = labeloverlay(dab_image_roi,~slice_mask_roi,...
+                'Colormap',[0,0,1],'Transparency',0.7);
+
+            fig0 = figure('units','normalized','outerposition',[0 0 1 1]);
+            ax(1) = subplot(121); imshow(h_image_roi_smask)
+            ax(2) = subplot(122); imshow(dab_image_roi_smask)
+            colormap(ax(1),h_colormap)
+            colormap(ax(2),dab_colormap)
+
+            
+            fname_ = strcat(file(1:end-11),'_',num2str(roi_order_no(roi_idx)),'_roi_',roi_fnames{roi_idx});
+            fname0 = strcat(fname_,'_3_H_DAB_',num2str(roi_size_um(1)),'x',num2str(roi_size_um(2)),'um_slice_mask.tif');
+            saveas(fig0,fullfile(roi_folder,fname0));
+            close(fig0);
+        
+            %% Calculate slice area per ROI
+            slice_area = sum(slice_mask_roi,[1,2]);
+            total_area = size(h_image_roi,1)*size(h_image_roi,2);
+            slice_area_norm = slice_area/total_area; % as % of total area
+
+%             roi.slice_area = slice_area;
+%             roi.total_area = total_area;
+%             roi.slice_area_norm = slice_area_norm;
+
+            rois_n_area(roi_idx) = slice_area_norm;
             
             %% Denoise images
             % This filter gets rid of most of the random pepper noise
@@ -519,6 +551,13 @@ function [] = analyse_data(files,load_rois,close_figs)
             %% Save results
             results.fname = fname;
             results.thresh_pixel = pixel_thresh;
+            
+            % info on slice mask
+            results.slice_area = slice_area;
+            results.total_area = total_area;
+            results.slice_area_norm = slice_area_norm;
+
+            % main results
             results.density = density;
             results.positive_pixels = positive_pixels;
             results.total_pixels = total_pixels;
