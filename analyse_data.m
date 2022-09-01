@@ -60,7 +60,7 @@ function [] = analyse_data(files,load_rois,close_figs)
 %             image_type = 'Iba1';
 %         end
         
-        [pixel_thresh,min_size,do_watershed] = get_antibody_threshold(img_type);
+        [pixel_thresh,min_size,max_size,do_watershed] = get_antibody_threshold(img_type);
         
     
         %% Results folder
@@ -85,12 +85,11 @@ function [] = analyse_data(files,load_rois,close_figs)
         rois_n_area = [];
         rois_size_um = {};
 
-        %%
+        %% Load preselected ROI
         for roi_idx = 1:roi_no
     % %         fname = strcat(file(1:end-11),'_roi_',roi_fnames{roi_idx},'.mat');
             fname = strcat(file(1:end-11),'_',num2str(roi_order_no(roi_idx)),'_roi_',roi_fnames{roi_idx},'.mat');
 
-            %% Load preselected ROI
             if load_rois
                 roi_fname = fullfile(roi_folder,fname);
 
@@ -100,7 +99,7 @@ function [] = analyse_data(files,load_rois,close_figs)
                     rois_y{roi_idx} = roi_file.y;
 %                     rois_n_area(roi_idx) = roi_file.slice_area_norm;
                     rois_size_um{roi_idx} = roi_file.size_um;
-                    fprintf('Successfully loaded %s ROI\n',fname);
+%                     fprintf('Successfully loaded %s ROI\n',fname);
 
                 else
                     roi_not_found = 1; % flag for at least one missing ROI
@@ -118,9 +117,16 @@ function [] = analyse_data(files,load_rois,close_figs)
         %% Load slice mask
         sm_file = dir(fullfile(roi_folder,strcat('*',img_type,'*slice_mask.mat')));
         slice_mask = load(fullfile(sm_file.folder,sm_file.name)).slice_mask;
+        
+        %% ROIs
+        if strcmp(img_type,'ki67') || strcmp(img_type,'dcx') || strcmp(img_type,'sox2')
+            roi_idxs = 1:2; % DG only
+        else
+            roi_idxs = 1:roi_no;
+        end
        
         %% Analysis per ROI
-        for roi_idx = 1:roi_no
+        for roi_idx = roi_idxs % 1:roi_no
             
             %%
             fname = strcat(file(1:end-11),'_',num2str(roi_order_no(roi_idx)),'_roi_',roi_fnames{roi_idx},'');            
@@ -131,7 +137,7 @@ function [] = analyse_data(files,load_rois,close_figs)
 % 
             %% Load ROI image
             file_path = fullfile(roi_img_folder,strcat(fname,'.tif'));
-            [h_image_roi,dab_image_roi,~] = load_deconvolved_images(file_path);
+            [h_image_roi,dab_image_roi,res_image_roi] = load_deconvolved_images(file_path);
             
             %% Find slice mask for ROI
             roi_x = rois_x{roi_idx};
@@ -233,10 +239,17 @@ function [] = analyse_data(files,load_rois,close_figs)
             dab_image_roi(~slice_mask_roi) = 255;
             
             %%
-            if strcmp(img_type,'cfos') || strcmp(img_type,'ct695')
+            if strcmp(img_type,'cfos') || strcmp(img_type,'ct695') || strcmp(img_type,'ki67')
                 
-                cell_thresh = 0.7; % 0.8 on reg image? 0.4-0.5 otherwise. 0.1 histeq
+%                 cell_thresh = 0.8; % 0.8 on reg image? 0.4-0.5 otherwise. 0.1 histeq
+
+                [cell_thresh,~] = graythresh(h_image_roi); % automatic otsu thresh
                 h_cell_mask = ~imbinarize(h_image_roi,cell_thresh);
+                
+%                 res_cell_mask = ~imbinarize(res_image_roi,0.5);
+%                 h_cell_mask = h_cell_mask | res_cell_mask;
+                
+%                 h_cell_mask = imbinarize(h_image_roi,'adaptive');
                 
                 k = 9;
                 kernel = 1/(k*k)*ones([k,k]);
@@ -281,14 +294,15 @@ function [] = analyse_data(files,load_rois,close_figs)
             % method 1: manually chosen threshold
 %             dab_roi_mask = dab_image_ < pixel_thresh;
             dab_roi_mask = ~imbinarize(dab_image_,pixel_thresh);
-            
+%             figure,imshow(dab_roi_mask)
         
             % REMOVE NON SLICE AREA FROM THE THRESHOLD MASK
 %             dab_roi_mask(~slice_mask_roi) = 0;
 
 
-            if strcmp(img_type,'ct695')
-                % keep only intracellular app
+            if strcmp(img_type,'ct695') || strcmp(img_type,'ki67')
+                
+                % keep only overlap between h and dab channels
                 dab_roi_mask_app = dab_roi_mask & h_cell_mask;
                 
                 fig7 = figure('units','normalized','outerposition',[0 0 1 1]);
@@ -444,6 +458,7 @@ function [] = analyse_data(files,load_rois,close_figs)
             
             % remove cells smaller than x um diameter
             min_length = (min_size/pixel_size);
+            max_length = (max_size/pixel_size);
             
             artefacts_idxs = [];
             too_small_idxs = [];
@@ -456,10 +471,15 @@ function [] = analyse_data(files,load_rois,close_figs)
             
             % line ratio would work well but can't filter using bwpropfilt
 %             line_ratio = ([cells_found(:).MajorAxisLength]-[cells_found(:).MinorAxisLength])./[cells_found(:).MajorAxisLength]
-            artefact_idxs = find([particles_found(:).Eccentricity]>max_eccentricity);
+
+            % remove likely artefacts (long particles) - disabled for now
+%             artefact_idxs = find([particles_found(:).Eccentricity]>max_eccentricity);
+            artefact_idxs = [];
+%             artefact_idxs = find([particles_found.Area]./[particles_found.ConvexArea]<.99)
             
 %             too_small_idxs = find([particles_found(:).MajorAxisLength]<min_length);
             too_small_idxs = find([particles_found(:).EquivDiameter]<min_length);
+            too_large_idxs = find([particles_found(:).EquivDiameter]>max_length);
 %             too_diff = setdiff(too_small_idxs_2,too_small_idxs);
 
             % EquivDiameter basically based on Area
@@ -469,7 +489,7 @@ function [] = analyse_data(files,load_rois,close_figs)
 %             too_small_area = find([cells_found(:).Area]<min_pix_area/4);
 %             too_diff = setdiff(too_small_area,too_small_idxs);
             
-            rm_idxs = [artefact_idxs, too_small_idxs];
+            rm_idxs = [artefact_idxs, too_small_idxs, too_large_idxs];
             
             
             fig4 = figure('units','normalized','outerposition',[0 0 1 1]);
@@ -480,10 +500,10 @@ function [] = analyse_data(files,load_rois,close_figs)
             for i = 1:length(particles_found) %rm_idxs
                 if any(artefact_idxs==i)
                     col = 'm';
-                    if any(too_small_idxs==i)
+                    if any(too_small_idxs==i) || any(too_large_idxs==i) 
                         col = 'r';
                     end
-                elseif any(too_small_idxs==i)
+                elseif any(too_small_idxs==i) || any(too_large_idxs==i) 
                     col = 'r';
                 else
                     col = 'g';
@@ -507,23 +527,23 @@ function [] = analyse_data(files,load_rois,close_figs)
             % create updated mask with accepted cells only
             dab_roi_mask_f = bwpropfilt(dab_roi_mask,'Eccentricity',[0,max_eccentricity]);
 %             dab_roi_plaques_mask = bwpropfilt(dab_roi_plaques_mask,'MajorAxisLength',[min_length,inf]);
-            dab_roi_mask_f = bwpropfilt(dab_roi_mask_f,'EquivDiameter',[min_length,inf]);
+            dab_roi_mask_f = bwpropfilt(dab_roi_mask_f,'EquivDiameter',[min_length,max_length]);
             
             dab_image_f_mask = labeloverlay(dab_image_,dab_roi_mask_f,...
                 'Colormap',color_map,'Transparency',transparency); % red
 
-%             figure,
-            subplot(212),hold on,title('Accepted particles')
-%             imshow(dab_roi_plaques_mask)
-            imshow(dab_image_f_mask)
+
+%             subplot(212),hold on,title('Accepted particles')
+% %             imshow(dab_roi_plaques_mask)
+%             imshow(dab_image_f_mask)
+%             
+%             fname4 = strcat(fname,'_3_DAB_mask_3_final.tif');
+%             saveas(fig4,fullfile(results_folder,fname4));
+%             if close_figs
+%                 close(fig4);
+%             end
             
-            fname4 = strcat(fname,'_3_DAB_mask_3_final.tif');
-            saveas(fig4,fullfile(results_folder,fname4));
-            if close_figs
-                close(fig4);
-            end
-            
-            %% Recreate mask with accepted particles only
+            %% Recreate accepted particles
             particles_found = regionprops(dab_roi_mask_f,'Area','Centroid',...
                 'BoundingBox','Circularity','Eccentricity',...
                 'MajorAxisLength','EquivDiameter','Image');
@@ -553,9 +573,6 @@ function [] = analyse_data(files,load_rois,close_figs)
 
 %             fprintf('Mask for %s saved\n',fname);
             
-            %%
-%             dab_roi_mask = dab_roi_plaques_mask;
-            
             %% Fiji approach
 %             setup_miji();
 %             Miji;
@@ -566,14 +583,6 @@ function [] = analyse_data(files,load_rois,close_figs)
 %             imp.show();
 %             
 %             MIJ.run("Analyze Particles...");
-            
-            %% Save ROI images
-%             roi_image = cat(3,h_image_,dab_image_);
-% %             magnification = 10; % load from inside roi_file later
-% %             img_fname = fullfile(roi_img_folder,strcat(fname,'_',num2str(magnification),'x'));
-%             
-%             img_fname = fullfile(roi_img_folder,strcat(fname));
-%             save(img_fname,'roi_image');
 
             %% Density (% area covered)
             tot_n_area = rois_n_area(roi_idx);
@@ -583,10 +592,23 @@ function [] = analyse_data(files,load_rois,close_figs)
             total_pixels = size(dab_roi_mask,1)*size(dab_roi_mask,2)*tot_n_area;
 %             total_pixels = size(dab_roi_mask,1)*size(dab_roi_mask,2);
 
-            density = round(positive_pixels/total_pixels*100,1);
+            density = round(positive_pixels/total_pixels*100,2);
 %             fprintf('Area covered for %s ROI = %1.1f %% \n', fname, density)
-            fprintf('Area covered = %1.1f %% \n', density)
+            fprintf('Area covered = %1.2f %% \n', density)
 
+            
+            %% Save final mask figure
+            title_txt = sprintf('Accepted particles. Cell count = %d, density = %1.2f',...
+                particle_no, density);
+            subplot(212),hold on,title(title_txt)
+%             imshow(dab_roi_plaques_mask)
+            imshow(dab_image_f_mask)
+            
+            fname4 = strcat(fname,'_3_DAB_mask_3_final.tif');
+            saveas(fig4,fullfile(results_folder,fname4));
+            if close_figs
+                close(fig4);
+            end
             
             %% Save results
             results.fname = fname;

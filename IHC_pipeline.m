@@ -18,9 +18,9 @@ base_folder = 'C:\Users\Pat\Desktop\TAH';
 deconvolve = 0;
 select_rois = 0;
 create_mask = 0;
-analyse = 0;
+analyse = 1;
 analyse_all = 0;
-summarise = 1;
+summarise = 0;
 
 %% Analysis settings
 % magnification = 20;
@@ -117,8 +117,6 @@ end
 
 
 %% Summarise results between animals within age groups
-% TODO: test this works for cohort_case == 2
-
 if summarise
     results_folder = fullfile(base_folder,'IHC_results');
     save_cohort_info(results_folder);
