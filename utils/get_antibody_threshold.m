@@ -20,7 +20,17 @@ function [pixel_thresh,min_size,do_watershed] = get_antibody_threshold(antibody_
         pixel_thresh = 0.65;
         min_size = 1;
         do_watershed = 0;
-
+        
+    elseif strcmp(antibody_type,'iba1')
+        pixel_thresh = 0.65;
+        min_size = 5;
+        do_watershed = 0;
+        
+    elseif strcmp(antibody_type,'gfap')
+        pixel_thresh = 0.3;
+        min_size = 5; % TODO: adjust
+        do_watershed = 0;
+        
     elseif strcmp(antibody_type,'cfos')
         pixel_thresh = 0.6; % decrease to detect only v dark cells
         min_size = 5;
@@ -31,13 +41,13 @@ function [pixel_thresh,min_size,do_watershed] = get_antibody_threshold(antibody_
         min_size = 5; % TODO: adjust
         do_watershed = 1;
 
-    elseif strcmp(antibody_type,'gfap')
+    elseif strcmp(antibody_type,'dcx')
         pixel_thresh = 0.3;
-        min_size = 5; % TODO: adjust
+        min_size = 5;
         do_watershed = 0;
-
-    elseif strcmp(antibody_type,'iba1')
-        pixel_thresh = 0.65;
+        
+    elseif strcmp(antibody_type,'sox2')
+        pixel_thresh = 0.5;
         min_size = 5;
         do_watershed = 0;
 

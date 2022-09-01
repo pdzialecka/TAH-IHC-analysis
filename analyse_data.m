@@ -536,7 +536,8 @@ function [] = analyse_data(files,load_rois,close_figs)
             
             %% Estimate number of cfos positive cells
             if strcmp(img_type,'cfos')
-                pos_particle_ratio = particle_no/avg_h_cell_no;
+                pos_particle_ratio = round(particle_no/avg_h_cell_no*100,1);
+                fprintf('Cfos positive cells = %1.1f %% \n',pos_particle_ratio);
             end
             
             %% Save final masks
