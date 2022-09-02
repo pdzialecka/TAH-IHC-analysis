@@ -19,14 +19,14 @@ deconvolve = 0;
 select_rois = 0;
 create_mask = 0;
 analyse = 1;
-analyse_all = 0;
-summarise = 0;
+analyse_all = 1;
+summarise = 1;
 
 %% Analysis settings
 % magnification = 20;
 % roi_size_um = [500,500]; % 500 x 500 um
 all_img_types = {'moc23','12f4','ct695','iba1','gfap','cfos','ki67','dcx','sox2'};
-img_type = 'dcx'; % specific analysis
+img_type = 'cfos'; % specific analysis
 
 %% Cohort case
 cohort_case = 2; % 1 = 13mo (cohort 1), 2 = 6mo (cohorts 2-5)

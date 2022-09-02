@@ -25,8 +25,8 @@ function [pixel_thresh,min_size,max_size,do_watershed] = get_antibody_threshold(
         do_watershed = 0;
         
     elseif strcmp(antibody_type,'iba1')
-        pixel_thresh = 0.65;
-        min_size = 5;
+        pixel_thresh = 0.5;
+        min_size = 4;
         max_size = inf;
         do_watershed = 0;
         
@@ -49,14 +49,14 @@ function [pixel_thresh,min_size,max_size,do_watershed] = get_antibody_threshold(
         do_watershed = 1;
 
     elseif strcmp(antibody_type,'dcx')
-        pixel_thresh = 0.3;
-        min_size = 1;
+        pixel_thresh = 0.5; % 0.3 without brightness correction
+        min_size = 3;
         max_size = 30;
         do_watershed = 0;
         
     elseif strcmp(antibody_type,'sox2')
         pixel_thresh = 0.5;
-        min_size = 5;
+        min_size = 3;
         max_size = 15;
         do_watershed = 1;
 

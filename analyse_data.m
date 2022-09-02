@@ -131,7 +131,7 @@ function [] = analyse_data(files,load_rois,close_figs)
         [h_image_ref,dab_image_ref,~] = load_deconvolved_images(ref_fname,1);
         
         %% Analysis per ROI
-        for roi_idx = 1:2 % roi_no
+        for roi_idx = 1:roi_no
             
             %%
             fname = strcat(file(1:end-11),'_',num2str(roi_order_no(roi_idx)),'_roi_',roi_fnames{roi_idx},'');            
@@ -142,14 +142,30 @@ function [] = analyse_data(files,load_rois,close_figs)
 % 
             %% Load ROI image
             file_path = fullfile(roi_img_folder,strcat(fname,'.tif'));
-            [h_image_roi,dab_image_roi,res_image_roi] = load_deconvolved_images(file_path);
+            [h_image_roi,dab_image_roi,~] = load_deconvolved_images(file_path);
             
             %% Normalise brightness based on the reference image
-            if ~contains(fname,'cfos')
+            normalise_brightness = 1;
+            
+            if normalise_brightness
+                h_image_roi = imhistmatch(h_image_roi,h_image_ref);
+    %             if ~contains(fname,'cfos')
                 dab_image_roi = imhistmatch(dab_image_roi,dab_image_ref);
-            end
-            h_image_roi = imhistmatch(h_image_roi,h_image_ref);
+    %             end
 
+                roi_b_img_folder = fullfile(fileparts(fileparts(folder)),'ROI_images_norm',mouse_name);
+                if ~exist(roi_b_img_folder,'dir')
+                    mkdir(roi_b_img_folder);
+                end
+    
+%                 roi_image = cat(2,h_image_roi,dab_image_roi);
+                img_fname = fullfile(roi_b_img_folder,strcat(fname,'.tif'));
+
+                imwrite(h_image_roi,img_fname,'Compression','none','WriteMode','overwrite');
+                imwrite(dab_image_roi,img_fname,'Compression','none','WriteMode','append');
+               
+            end
+            
             %% Find slice mask for ROI
             roi_x = rois_x{roi_idx};
             roi_y = rois_y{roi_idx};
@@ -313,6 +329,9 @@ function [] = analyse_data(files,load_rois,close_figs)
 
 
             if strcmp(img_type,'ct695') % || strcmp(img_type,'ki67')
+                
+                % remove plaques
+                dab_roi_mask = bwpropfilt(dab_roi_mask,'EquivDiameter',[0,max_size/pixel_size]);
                 
                 % keep only overlap between h and dab channels
                 dab_roi_mask_app = dab_roi_mask & h_cell_mask;
