@@ -119,14 +119,19 @@ function [] = analyse_data(files,load_rois,close_figs)
         slice_mask = load(fullfile(sm_file.folder,sm_file.name)).slice_mask;
         
         %% ROIs
-        if strcmp(img_type,'ki67') || strcmp(img_type,'dcx') || strcmp(img_type,'sox2')
-            roi_idxs = 1:2; % DG only
-        else
-            roi_idxs = 1:roi_no;
-        end
-       
+%         if strcmp(img_type,'ki67') || strcmp(img_type,'dcx') || strcmp(img_type,'sox2')
+%             roi_idxs = 1:2; % DG only
+%         else
+%             roi_idxs = 1:roi_no;
+%         end
+
+        %% Load reference image
+        ref_file = dir(fullfile(fileparts(fileparts(fileparts(fileparts(files(1).folder)))),'Reference_images',strcat('*',img_type,'*.tif')));
+        ref_fname = fullfile(ref_file(1).folder,ref_file(1).name);
+        [h_image_ref,dab_image_ref,~] = load_deconvolved_images(ref_fname,1);
+        
         %% Analysis per ROI
-        for roi_idx = roi_idxs % 1:roi_no
+        for roi_idx = 1:2 % roi_no
             
             %%
             fname = strcat(file(1:end-11),'_',num2str(roi_order_no(roi_idx)),'_roi_',roi_fnames{roi_idx},'');            
@@ -139,6 +144,12 @@ function [] = analyse_data(files,load_rois,close_figs)
             file_path = fullfile(roi_img_folder,strcat(fname,'.tif'));
             [h_image_roi,dab_image_roi,res_image_roi] = load_deconvolved_images(file_path);
             
+            %% Normalise brightness based on the reference image
+            if ~contains(fname,'cfos')
+                dab_image_roi = imhistmatch(dab_image_roi,dab_image_ref);
+            end
+            h_image_roi = imhistmatch(h_image_roi,h_image_ref);
+
             %% Find slice mask for ROI
             roi_x = rois_x{roi_idx};
             roi_y = rois_y{roi_idx};
@@ -239,11 +250,12 @@ function [] = analyse_data(files,load_rois,close_figs)
             dab_image_roi(~slice_mask_roi) = 255;
             
             %%
-            if strcmp(img_type,'cfos') || strcmp(img_type,'ct695') || strcmp(img_type,'ki67')
+            if strcmp(img_type,'cfos') || strcmp(img_type,'ct695') % || strcmp(img_type,'ki67')
                 
-%                 cell_thresh = 0.8; % 0.8 on reg image? 0.4-0.5 otherwise. 0.1 histeq
-
-                [cell_thresh,~] = graythresh(h_image_roi); % automatic otsu thresh
+%                 cell_thresh = 0.8;
+                base_h_level = round(mean(mean(h_image_roi)));
+                cell_thresh = 0.9*base_h_level/255;
+%                 [cell_thresh,~] = graythresh(h_image_roi); % automatic otsu thresh
                 h_cell_mask = ~imbinarize(h_image_roi,cell_thresh);
                 
 %                 res_cell_mask = ~imbinarize(res_image_roi,0.5);
@@ -300,7 +312,7 @@ function [] = analyse_data(files,load_rois,close_figs)
 %             dab_roi_mask(~slice_mask_roi) = 0;
 
 
-            if strcmp(img_type,'ct695') || strcmp(img_type,'ki67')
+            if strcmp(img_type,'ct695') % || strcmp(img_type,'ki67')
                 
                 % keep only overlap between h and dab channels
                 dab_roi_mask_app = dab_roi_mask & h_cell_mask;
@@ -474,8 +486,14 @@ function [] = analyse_data(files,load_rois,close_figs)
 
             % remove likely artefacts (long particles) - disabled for now
 %             artefact_idxs = find([particles_found(:).Eccentricity]>max_eccentricity);
-            artefact_idxs = [];
-%             artefact_idxs = find([particles_found.Area]./[particles_found.ConvexArea]<.99)
+%             artefact_idxs = [];
+            if strcmp(img_type,'ki67')
+                max_eccentricity = 1; % 0.9
+                artefact_idxs = find([particles_found.Eccentricity]>max_eccentricity);
+            else
+                max_eccentricity = 1;
+                artefact_idxs = [];
+            end
             
 %             too_small_idxs = find([particles_found(:).MajorAxisLength]<min_length);
             too_small_idxs = find([particles_found(:).EquivDiameter]<min_length);
@@ -526,7 +544,6 @@ function [] = analyse_data(files,load_rois,close_figs)
 
             % create updated mask with accepted cells only
             dab_roi_mask_f = bwpropfilt(dab_roi_mask,'Eccentricity',[0,max_eccentricity]);
-%             dab_roi_plaques_mask = bwpropfilt(dab_roi_plaques_mask,'MajorAxisLength',[min_length,inf]);
             dab_roi_mask_f = bwpropfilt(dab_roi_mask_f,'EquivDiameter',[min_length,max_length]);
             
             dab_image_f_mask = labeloverlay(dab_image_,dab_roi_mask_f,...

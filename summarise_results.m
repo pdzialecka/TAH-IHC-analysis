@@ -154,6 +154,9 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
     cond_names = {'Sham','40 Hz','8 Hz','LTD'};
     cond_no = length(cond_names);
     
+    
+    [roi_names,roi_fnames,roi_no] = get_roi_list();
+        
     if strcmp(img_type,'ki67') || strcmp(img_type,'dcx') || strcmp(img_type,'sox2')
         roi_idxs = 1:2; % DG only
     else
@@ -161,7 +164,6 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
     end
 
     %% Load results
-    [roi_names,roi_fnames,roi_no] = get_roi_list();
 
     results = {};
     roi_density = nan(roi_no,mouse_no);
