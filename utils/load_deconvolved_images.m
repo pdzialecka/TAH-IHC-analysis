@@ -11,7 +11,11 @@ function [h_image,dab_image,res_image] = load_deconvolved_images(file_path,rotat
     image = read_file(file_path);
     h_image = image(:,:,1);
     dab_image = image(:,:,2);
-    res_image = image(:,:,3);
+    if size(image,3) == 3
+        res_image = image(:,:,3);
+    else
+        res_image = nan(size(h_image));
+    end
 
     %% Rotate images
     if rotate_img

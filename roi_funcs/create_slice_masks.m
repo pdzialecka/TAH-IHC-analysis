@@ -15,11 +15,12 @@ function [] = create_slice_masks(files)
         [roi_folder,~] = find_roi_folder(folder);
 
         mask_path = fullfile(roi_folder,strcat(file(1:end-4),'_slice_mask.mat'));
-        remove_file = dir(fullfile(roi_folder,'*remove_mask.mat'));
+        img_type = find_img_type(file);
+        remove_files = dir(fullfile(roi_folder,strcat('*',img_type,'*remove_mask.mat')));
 
         %%
         try
-            if 1 % ~exist(mask_path,'file') || ~isempty(remove_file)
+            if 1 % ~exist(mask_path,'file') || ~isempty(remove_files)
                 %% Load image
         %         [h_image,dab_image,res_image] = load_deconvolved_images(file_path,1);
 

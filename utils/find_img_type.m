@@ -4,6 +4,11 @@ function [img_type] = find_img_type(fname)
 
     %%
     idxs_ = strfind(fname,'_');
-    img_type = fname(idxs_(1)+1:idxs_(2)-1);
     
+    if length(idxs_)>1
+        img_type = fname(idxs_(1)+1:idxs_(2)-1);
+    elseif length(idxs_) == 1
+        idxs_2 = strfind(fname,'.');
+        img_type = fname(idxs_(1)+1:idxs_2(1)-1);
+    end
 end

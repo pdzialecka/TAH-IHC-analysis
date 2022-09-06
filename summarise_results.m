@@ -86,6 +86,7 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
     %% Find result files
     result_files = [];
     roi_img_files = [];
+    roi_img_norm_files = [];
     roi_mask_files = [];
 
     for i = 1:length(data_folders)
@@ -99,8 +100,12 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
             idx_2_files = dir(fullfile(data_folder,'IHC','ROI_images',m_names{j},strcat('*',img_type,'*.tif')));
             roi_img_files = [roi_img_files; idx_2_files];
             
+            idx_4_files = dir(fullfile(data_folder,'IHC','ROI_images_norm',m_names{j},strcat('*',img_type,'*.tif')));
+            roi_img_norm_files = [roi_img_norm_files; idx_4_files];
+            
             idx_3_files = dir(fullfile(data_folder,'IHC','Results',m_names{j},strcat('*',img_type,'*mask_accepted.mat')));
             roi_mask_files = [roi_mask_files; idx_3_files];
+            
         end
 
         % faster but wrong order
@@ -111,10 +116,12 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
     %% Sort result files
     [~,s_idxs1] = sort({result_files.name});
     [~,s_idxs2] = sort({roi_img_files.name});
+    [~,s_idxs4] = sort({roi_img_norm_files.name});
     [~,s_idxs3] = sort({roi_mask_files.name});
 
     result_files = result_files(s_idxs1);
     roi_img_files = roi_img_files(s_idxs2);
+    roi_img_norm_files = roi_img_norm_files(s_idxs4);
     roi_mask_files = roi_mask_files(s_idxs3);
 
 %     {result_files.name}'
@@ -388,7 +395,8 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
         for j = 1:cond_no
             fig1 = figure('units','normalized','outerposition',[0 0 1 1]);
             fig2 = figure('units','normalized','outerposition',[0 0 1 1]);
-            
+            fig3 = figure('units','normalized','outerposition',[0 0 1 1]);
+
             cond_j_names = condition_mouse_names{j};
             cond_img_idxs = img_idxs((contains({roi_img_files(img_idxs).name}',cond_j_names)));
 %             {roi_img_files(cond_img_idxs).name}'
@@ -422,6 +430,13 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
                     sprintf('Cell count = %d; Density = %1.2f %%',roi_results_count_j(i),roi_results_density_j(i))};
                 title(title_txt,'Interpreter','none')
                 
+                 % norm dab images
+                [~,roi_img_norm_dab] = load_deconvolved_images(fullfile(roi_img_norm_files(cond_img_idxs(i)).folder,roi_img_norm_files(cond_img_idxs(i)).name));
+                set(0,'CurrentFigure',fig3)
+                subplot(round(max_n/2),2,i),imshow(roi_img_norm_dab)
+                colormap(dab_colormap)
+                title(roi_img_norm_files(cond_img_idxs(i)).name,'Interpreter','none')
+                
             end
             
             fig_1_name = sprintf('roi_images_%s_%d_%s_%d_%s.tif',img_type,roi_idx,roi_fnames{roi_idx},j,cond_names{j});
@@ -429,11 +444,15 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
             
             fig_2_name = sprintf('roi_images_%s_%d_%s_%d_%s_masks.tif',img_type,roi_idx,roi_fnames{roi_idx},j,cond_names{j});
             saveas(fig2,fullfile(comparison_folder,fig_2_name));
+           
+            fig_3_name = sprintf('roi_images_%s_%d_%s_%d_%s_0_norm.tif',img_type,roi_idx,roi_fnames{roi_idx},j,cond_names{j});
+            saveas(fig3,fullfile(comparison_folder,fig_3_name));
 
             
             if close_figs
                 close(fig1);
                 close(fig2);
+                close(fig3);
             end
 
         end

@@ -171,7 +171,7 @@ function [] = analyse_data(files,load_rois,close_figs)
             roi_y = rois_y{roi_idx};
             slice_mask_roi = slice_mask(roi_y,roi_x);
             roi_size_um = rois_size_um{roi_idx};
-            
+                        
             %% Display zoomed in ROI w slice mask
             h_image_roi_smask = labeloverlay(h_image_roi,~slice_mask_roi,...
                 'Colormap',[0,0,1],'Transparency',0.7);
@@ -200,7 +200,8 @@ function [] = analyse_data(files,load_rois,close_figs)
 %             roi.slice_area_norm = slice_area_norm;
 
             rois_n_area(roi_idx) = slice_area_norm;
-                        
+            tot_n_area = rois_n_area(roi_idx);
+     
             %% Denoise images
             % This filter gets rid of most of the random pepper noise
             
@@ -208,8 +209,8 @@ function [] = analyse_data(files,load_rois,close_figs)
             % box blur applied many times = approximation of Gaussian blur
             % gaussian f requires sigma estimation and potentially larger filter size
             
-            h_image_ = h_image_roi;
-            dab_image_ = dab_image_roi;
+%             h_image_ = h_image_roi;
+%             dab_image_ = dab_image_roi;
 
             % Spatial smoothing
             spatial_avg = 1;
@@ -217,8 +218,8 @@ function [] = analyse_data(files,load_rois,close_figs)
                 k3 = 3;
 
                 box_kernel = ones(k3,k3)*1/(k3*k3);
-                h_image_f = imfilter(h_image_,box_kernel,'replicate');
-                dab_image_f = imfilter(dab_image_,box_kernel,'replicate');
+                h_image_f = imfilter(h_image_roi,box_kernel,'replicate');
+                dab_image_f = imfilter(dab_image_roi,box_kernel,'replicate');
 
 %                 sigma = 10;
 %                 h_image_f = imgaussfilt(h_image_,sigma,'FilterSize',k3,'Padding','replicate');
@@ -238,11 +239,11 @@ function [] = analyse_data(files,load_rois,close_figs)
 
                
                 fig1 = figure('units','normalized','outerposition',[0 0 1 1]);
-                subplot(211),imshow(h_image_),colormap(h_colormap),title('Original')
+                subplot(211),imshow(h_image_roi),colormap(h_colormap),title('Original')
                 subplot(212),imshow(h_image_f),colormap(h_colormap),title('Filtered')
 
                 fig2 = figure('units','normalized','outerposition',[0 0 1 1]);
-                subplot(211),imshow(dab_image_),colormap(dab_colormap),title('Original')
+                subplot(211),imshow(dab_image_roi),colormap(dab_colormap),title('Original')
                 subplot(212),imshow(dab_image_f),colormap(dab_colormap),title('Filtered')
                 
                 fname1 = strcat(fname,'_1_H_filtered.tif');
@@ -257,22 +258,25 @@ function [] = analyse_data(files,load_rois,close_figs)
                     close(fig2);
                 end
 
-                dab_image_ = dab_image_f;
-                h_image_ = h_image_f;
+                dab_image_roi = dab_image_f;
+                h_image_roi = h_image_f;
             end
             
             %% Remove slice mask from images
-            h_image_roi(~slice_mask_roi) = 255;
-            dab_image_roi(~slice_mask_roi) = 255;
+            h_image_ = h_image_roi;
+            dab_image_ = dab_image_roi;
+            
+            h_image_(~slice_mask_roi) = 255;
+            dab_image_(~slice_mask_roi) = 255;
             
             %%
             if strcmp(img_type,'cfos') || strcmp(img_type,'ct695') % || strcmp(img_type,'ki67')
                 
 %                 cell_thresh = 0.8;
-                base_h_level = round(mean(mean(h_image_roi)));
+                base_h_level = round(mean(mean(h_image_)));
                 cell_thresh = 0.9*base_h_level/255;
 %                 [cell_thresh,~] = graythresh(h_image_roi); % automatic otsu thresh
-                h_cell_mask = ~imbinarize(h_image_roi,cell_thresh);
+                h_cell_mask = ~imbinarize(h_image_,cell_thresh);
                 
 %                 res_cell_mask = ~imbinarize(res_image_roi,0.5);
 %                 h_cell_mask = h_cell_mask | res_cell_mask;
@@ -291,7 +295,7 @@ function [] = analyse_data(files,load_rois,close_figs)
                 
                 h_cell_mask = h_cell_mask_f;
 
-                h_image_mask_f = labeloverlay(h_image_,h_cell_mask_f,...
+                h_image_mask_f = labeloverlay(h_image_roi,h_cell_mask_f,...
                     'Colormap',color_map,'Transparency',transparency);
                 
                                 
@@ -357,7 +361,7 @@ function [] = analyse_data(files,load_rois,close_figs)
             end
             
             
-            dab_image_mask = labeloverlay(dab_image_,dab_roi_mask,...
+            dab_image_mask = labeloverlay(dab_image_roi,dab_roi_mask,...
                 'Colormap',color_map,'Transparency',transparency);
 %             figure,imshow(dab_image_mask)
 
@@ -391,7 +395,7 @@ function [] = analyse_data(files,load_rois,close_figs)
 %             min_con_pixels = min_pix_area;
             connectivity = 8; % default: 4
             dab_roi_mask_f = bwareaopen(dab_roi_mask,min_con_pixels,connectivity);
-            dab_image_mask_f = labeloverlay(dab_image_,dab_roi_mask_f,...
+            dab_image_mask_f = labeloverlay(dab_image_roi,dab_roi_mask_f,...
                 'Colormap',color_map,'Transparency',transparency);
 
             fig3 = figure('units','normalized','outerposition',[0 0 1 1]);
@@ -565,7 +569,7 @@ function [] = analyse_data(files,load_rois,close_figs)
             dab_roi_mask_f = bwpropfilt(dab_roi_mask,'Eccentricity',[0,max_eccentricity]);
             dab_roi_mask_f = bwpropfilt(dab_roi_mask_f,'EquivDiameter',[min_length,max_length]);
             
-            dab_image_f_mask = labeloverlay(dab_image_,dab_roi_mask_f,...
+            dab_image_f_mask = labeloverlay(dab_image_roi,dab_roi_mask_f,...
                 'Colormap',color_map,'Transparency',transparency); % red
 
 
@@ -585,10 +589,13 @@ function [] = analyse_data(files,load_rois,close_figs)
                 'MajorAxisLength','EquivDiameter','Image');
             
             particle_no = length(particles_found);
+            
+            % normalise number of particles by area
+            particle_no = round(particle_no/tot_n_area);
+            
             fprintf('Analysing ROI %s:\n',fname)
             fprintf('No of particles = %d\n',particle_no)
             
-            % TODO: normalise number of particles by area?
             
             %% Estimate number of cfos positive cells
             if strcmp(img_type,'cfos')
@@ -621,11 +628,11 @@ function [] = analyse_data(files,load_rois,close_figs)
 %             MIJ.run("Analyze Particles...");
 
             %% Density (% area covered)
-            tot_n_area = rois_n_area(roi_idx);
+%             tot_n_area = rois_n_area(roi_idx);
             positive_pixels = sum(dab_roi_mask,[1,2]);
             
             % normalise total pixels to slice area
-            total_pixels = size(dab_roi_mask,1)*size(dab_roi_mask,2)*tot_n_area;
+            total_pixels = round(size(dab_roi_mask,1)*size(dab_roi_mask,2)*tot_n_area);
 %             total_pixels = size(dab_roi_mask,1)*size(dab_roi_mask,2);
 
             density = round(positive_pixels/total_pixels*100,2);

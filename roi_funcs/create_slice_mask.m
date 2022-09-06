@@ -69,18 +69,23 @@ function [slice_mask,slice_mask_filled,slice_region] = create_slice_mask(image,f
     end
     
     %% Remove manually selected parts of the mask
-    remove_file = dir(fullfile(roi_folder,'*remove_mask.mat'));
+    img_type = find_img_type(file);
+    remove_files = dir(fullfile(roi_folder,strcat('*',img_type,'*remove_mask.mat')));
     
-    if ~isempty(remove_file)
-        remove_mask = load(fullfile(remove_file.folder,remove_file.name)).remove_mask;
+    if ~isempty(remove_files)
         
         new_slice_mask = slice_mask;
-        new_slice_mask(remove_mask) = 0;
+        total_remove_mask = false(size(slice_mask));
+        for i = 1:length(remove_files)
+            remove_mask = load(fullfile(remove_files(i).folder,remove_files(i).name)).remove_mask;
+            total_remove_mask(remove_mask) = 1;
+        end
+        new_slice_mask(total_remove_mask) = 0;
         
         % Replot the slice mask figure
         h_image_slice_mask = labeloverlay(image,~slice_mask,...
             'Colormap',[0,0,1],'Transparency',0.7);
-        h_image_slice_mask_2 = labeloverlay(h_image_slice_mask,remove_mask,...
+        h_image_slice_mask_2 = labeloverlay(h_image_slice_mask,total_remove_mask,...
             'Colormap',[1,0,0],'Transparency',0.7);
         
         fig = figure;
