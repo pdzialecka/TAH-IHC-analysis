@@ -51,10 +51,22 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
     
     % add image_type subfolder
     cohort_results_folder = fullfile(cohort_results_folder,img_type);
-
     if ~exist(cohort_results_folder)
         mkdir(cohort_results_folder)
     end
+    
+    %% Extra subfolders
+    % roi comparison
+    comparison_folder = fullfile(cohort_results_folder,'ROI_comparison');
+    if ~exist(comparison_folder)
+        mkdir(comparison_folder);
+    end
+    
+    % stats
+    stats_folder = fullfile(cohort_results_folder,'Stats');
+    if ~exist(stats_folder)
+        mkdir(stats_folder)
+    end    
 
     %% Load cohort info
     cohort_info_folder = fullfile(results_folder,'Cohort_info');
@@ -160,7 +172,7 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
     %% Conditions
     cond_names = {'Sham','40 Hz','8 Hz','LTD'};
     cond_no = length(cond_names);
-    
+    variable_names_t = {'Sham','Gamma (40 Hz)','Theta (8 Hz)','LTD (1 Hz)'};
     
     [roi_names,roi_fnames,roi_no] = get_roi_list();
         
@@ -169,9 +181,21 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
     else
         roi_idxs = 1:roi_no;
     end
+    
+    %% Results to summarise
+    if strcmp(img_type,'dcx')
+        check_count = 0;
+    else
+        check_count = 1;
+    end
+    
+    if strcmp(img_type,'cfos')
+        check_perc_positive = 1;
+    else
+        check_perc_positive = 0;
+    end
 
     %% Load results
-
     results = {};
     roi_density = nan(roi_no,mouse_no);
     roi_particle_no = nan(roi_no,mouse_no);
@@ -244,14 +268,15 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
         roi_results_density(1:theta_n,3) = theta_density(roi_idx,:);
         roi_results_density(1:ltd_n,4) = ltd_density(roi_idx,:);
         
-        if normalise_to_sham
-            mean_results = mean(roi_results_density,'omitnan');
-            results_to_plot = roi_results_density./mean_results(1)*100;
-        elseif normalise_to_control
-            results_to_plot = roi_results_density./control_results*100;
-        else
-            results_to_plot = roi_results_density;
-        end
+        
+%         if normalise_to_sham
+%             mean_results = mean(roi_results_density,'omitnan');
+%             results_to_plot = roi_results_density./mean_results(1)*100;
+%         elseif normalise_to_control
+%             results_to_plot = roi_results_density./control_results*100;
+%         else
+%             results_to_plot = roi_results_density;
+%         end
 
         figure,hold on
         x = [ones(max_n,1),2*ones(max_n,1),3*ones(max_n,1),4*ones(max_n,1)];
@@ -268,16 +293,21 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
         saveas(gcf,fullfile(cohort_results_folder,fig_name));
         if close_figs; close(gcf); end
         
-        file_name = sprintf('%s_density_%d_roi_%s_data.mat',img_type,roi_idx,roi_fnames{roi_idx});
-        save(fullfile(cohort_results_folder,file_name),'roi_results_density');
-        
+        file_name = sprintf('%s_density_%d_roi_%s_data',img_type,roi_idx,roi_fnames{roi_idx});
+        save(fullfile(stats_folder,strcat(file_name,'.mat')),'roi_results_density');
         results_density_all{roi_idx} = roi_results_density;
+        
+        % save results as an excel table
+        roi_results_density_T = array2table(roi_results_density,'VariableNames',cond_names); % cond_names
+        table_name = fullfile(stats_folder,strcat(file_name,'.xlsx'));
+        writetable(roi_results_density_T,table_name);
+        
     end
     
     %% Results summary: cell count
     results_count_all = {};
 
-    if ~strcmp(img_type,'dcx')
+    if check_count
         sham_particle_no = roi_particle_no(roi_idxs,mouse_cond_idxs==1);
         gamma_particle_no = roi_particle_no(roi_idxs,mouse_cond_idxs==2);
         theta_particle_no = roi_particle_no(roi_idxs,mouse_cond_idxs==3);
@@ -317,23 +347,30 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
             saveas(gcf,fullfile(cohort_results_folder,fig_name));
             if close_figs; close(gcf); end
 
-            file_name = sprintf('%s_count_%d_roi_%s_data.mat',img_type,roi_idx,roi_fnames{roi_idx});
-            save(fullfile(cohort_results_folder,file_name),'roi_results_count');
+            file_name = sprintf('%s_count_%d_roi_%s_data',img_type,roi_idx,roi_fnames{roi_idx});
+            save(fullfile(stats_folder,strcat(file_name,'.mat')),'roi_results_count');
 
             results_count_all{roi_idx} = roi_results_count;
+            
+            % save results as an excel table
+            roi_results_count_T = array2table(roi_results_count,'VariableNames',cond_names); % cond_names
+            table_name = fullfile(stats_folder,strcat(file_name,'.xlsx'));
+            writetable(roi_results_count_T,table_name);
 
         end
     end
     
     %% Results summary: % of positive cells (cfos only)
-    if strcmp(img_type,'cfos')
+    results_ratio_all = {};
+    
+    if check_perc_positive
         
         sham_pos_ratio = roi_pos_particle_ratio(roi_idxs,mouse_cond_idxs==1);
         gamma_pos_ratio = roi_pos_particle_ratio(roi_idxs,mouse_cond_idxs==2);
         theta_pos_ratio = roi_pos_particle_ratio(roi_idxs,mouse_cond_idxs==3);
         ltd_pos_ratio = roi_pos_particle_ratio(roi_idxs,mouse_cond_idxs==4);
 
-        [nanmean(sham_pos_ratio,2),nanmean(gamma_pos_ratio,2),nanmean(theta_pos_ratio,2),nanmean(ltd_pos_ratio,2)]
+        [nanmean(sham_pos_ratio,2),nanmean(gamma_pos_ratio,2),nanmean(theta_pos_ratio,2),nanmean(ltd_pos_ratio,2)];
         % [nanstd(sham_density,'',2),nanstd(gamma_density,'',2),nanstd(theta_density,'',2),nanstd(ltd_density,'',2)]
 
         for roi_idx = roi_idxs
@@ -366,19 +403,97 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
             fig_name = sprintf('%s_pos_ratio_%d_roi_%s.tif',img_type,roi_idx,roi_fnames{roi_idx});
             saveas(gcf,fullfile(cohort_results_folder,fig_name));
             if close_figs; close(gcf); end
+            
+            results_ratio_all{roi_idx} = roi_results_ratio;
 
-            file_name = sprintf('%s_pos_ratio_%d_roi_%s_data.mat',img_type,roi_idx,roi_fnames{roi_idx});
-            save(fullfile(cohort_results_folder,file_name),'roi_results_ratio');
+            file_name = sprintf('%s_pos_ratio_%d_roi_%s_data',img_type,roi_idx,roi_fnames{roi_idx});
+            save(fullfile(stats_folder,strcat(file_name,'.mat')),'roi_results_ratio');
+
+            % save results as an excel table
+            roi_results_ratio_T = array2table(roi_results_ratio,'VariableNames',cond_names); % cond_names
+            table_name = fullfile(stats_folder,strcat(file_name,'.xlsx'));
+            writetable(roi_results_ratio_T,table_name);
 
         end
     end
     
-    %% Plot DAB images for comparison
-    comparison_folder = fullfile(cohort_results_folder,'ROI_comparison');
-    if ~exist(comparison_folder)
-        mkdir(comparison_folder);
+    %% Statistics
+    % not all data normally distributed; use wilcoxon test instead of ttest
+    
+    p_density = nan(length(roi_idxs),3);
+    h_density = nan(length(roi_idxs),3);
+    
+    p_count = nan(length(roi_idxs),3);
+    h_count = nan(length(roi_idxs),3);
+    
+    p_ratio = nan(length(roi_idxs),3);
+    h_ratio = nan(length(roi_idxs),3);
+        
+    
+    for roi_idx = roi_idxs
+        
+        % DENSITY
+        results_density = results_density_all{roi_idx};
+    %     [h,p] = kstest(results_density); % h = 0 if normally distributed
+
+        % compare all stims to sham
+        [p_density(roi_idx,1),h_density(roi_idx,1)] = ranksum(results_density(:,1),results_density(:,2));
+        [p_density(roi_idx,2),h_density(roi_idx,2)] = ranksum(results_density(:,1),results_density(:,3));
+        [p_density(roi_idx,3),h_density(roi_idx,3)] = ranksum(results_density(:,1),results_density(:,4));
+        
+        
+        % CELL COUNT
+        if check_count
+            results_count = results_count_all{roi_idx};
+
+            [p_count(roi_idx,1),h_count(roi_idx,1)] = ranksum(results_count(:,1),results_count(:,2));
+            [p_count(roi_idx,2),h_count(roi_idx,2)] = ranksum(results_count(:,1),results_count(:,3));
+            [p_count(roi_idx,3),h_count(roi_idx,3)] = ranksum(results_count(:,1),results_count(:,4));     
+        end
+        
+        % CFOS POSITIVE RATIO
+        if check_perc_positive
+            results_ratio = results_ratio_all{roi_idx};
+            
+            [p_ratio(roi_idx,1),h_ratio(roi_idx,1)] = ranksum(results_ratio(:,1),results_ratio(:,2));
+            [p_ratio(roi_idx,2),h_ratio(roi_idx,2)] = ranksum(results_ratio(:,1),results_ratio(:,3));
+            [p_ratio(roi_idx,3),h_ratio(roi_idx,3)] = ranksum(results_ratio(:,1),results_ratio(:,4));     
+        end
     end
     
+    
+    %% Save stats
+    var_names = {'Sham vs Gamma','Sham vs Theta','Sham vs LTD'};
+
+    p = p_density; h = h_density;
+    file_name = sprintf('%s_density_%d_roi_%s_stats',img_type,roi_idx,roi_fnames{roi_idx});
+    save(fullfile(stats_folder,strcat(file_name,'.mat')),'p','h');
+    
+    stats_T = array2table(p,'VariableNames',var_names,'RowNames',roi_names(roi_idxs));
+    table_name = fullfile(stats_folder,strcat(file_name,'.xlsx'));
+    writetable(stats_T,table_name);
+
+    if check_count
+        p = p_count; h = h_count;
+        file_name = sprintf('%s_count_%d_roi_%s_stats',img_type,roi_idx,roi_fnames{roi_idx});
+        save(fullfile(stats_folder,strcat(file_name,'.mat')),'p','h');
+
+        stats_T = array2table(p,'VariableNames',var_names,'RowNames',roi_names(roi_idxs));
+        table_name = fullfile(stats_folder,strcat(file_name,'.xlsx'));
+        writetable(stats_T,table_name);
+    end
+    
+    if check_perc_positive
+        p = p_ratio; h = h_ratio;
+        file_name = sprintf('%s_pos_ratio_%d_roi_%s_stats',img_type,roi_idx,roi_fnames{roi_idx});
+        save(fullfile(stats_folder,strcat(file_name,'.mat')),'p','h');
+
+        stats_T = array2table(p,'VariableNames',var_names,'RowNames',roi_names(roi_idxs));
+        table_name = fullfile(stats_folder,strcat(file_name,'.xlsx'));
+        writetable(stats_T,table_name);
+    end
+    
+    %% Plot DAB images for comparison
     for roi_idx = roi_idxs
         
         roi_fname = roi_fnames{roi_idx};

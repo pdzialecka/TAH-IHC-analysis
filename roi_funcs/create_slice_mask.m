@@ -1,4 +1,4 @@
-function [slice_mask,slice_mask_filled,slice_region] = create_slice_mask(image,file_,mask_thresh)
+function [slice_mask,slice_mask_filled,slice_region,mask_thresh] = create_slice_mask(image,file_,mask_thresh)
     %% Create slice mask based on image
     % @author: pdzialecka
     
@@ -15,6 +15,13 @@ function [slice_mask,slice_mask_filled,slice_region] = create_slice_mask(image,f
     %%
     file = file_.name;
     [roi_folder,~] = find_roi_folder(file_.folder);
+    
+    %% Two exceptions - manual thresholds
+    if strcmp(file,'AD-Hipp48_iba1.tif') || strcmp(file,'AD-Hipp51_12f4.tif')
+        % 244 (mask_thresh+10) a bit better out of slice for 51 but taking
+        % too much out of dg
+        mask_thresh = 245;
+    end
 
     %% Find the slice mask
     slice_mask = image < mask_thresh;

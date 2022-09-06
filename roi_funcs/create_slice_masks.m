@@ -48,7 +48,7 @@ function [] = create_slice_masks(files)
                 image = imwarp(image,tform,'interp','cubic','FillValues',255);
 
                 %% Create slice mask
-                [slice_mask,slice_mask_filled] = create_slice_mask(image,file_,mask_thresh);
+                [slice_mask,slice_mask_filled,~,mask_thresh] = create_slice_mask(image,file_,mask_thresh);
                 fprintf('Slice mask for %s created; mask thresh = %d\n',file,mask_thresh)
                 
             else
