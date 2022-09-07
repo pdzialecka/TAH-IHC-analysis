@@ -1,5 +1,5 @@
 function [h_colormap,dab_colormap] = create_hdab_colormaps()
-    %% Create H DAB colormaps for easier visualisation
+    %% Create H DAB colormaps for easier visualisation of IHC images
     % @author: pdzialecka
 
     %%

@@ -145,7 +145,11 @@ function [] = analyse_data(files,load_rois,close_figs)
             [h_image_roi,dab_image_roi,~] = load_deconvolved_images(file_path);
             
             %% Normalise brightness based on the reference image
-            normalise_brightness = 1;
+            if strcmp(img_type,'ki67') || strcmp(img_type,'cfos')
+                normalise_brightness = 0;
+            else
+                normalise_brightness = 1;
+            end
             
             if normalise_brightness
                 h_image_roi = imhistmatch(h_image_roi,h_image_ref);

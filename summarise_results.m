@@ -269,14 +269,14 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
         roi_results_density(1:ltd_n,4) = ltd_density(roi_idx,:);
         
         
-%         if normalise_to_sham
-%             mean_results = mean(roi_results_density,'omitnan');
-%             results_to_plot = roi_results_density./mean_results(1)*100;
-%         elseif normalise_to_control
-%             results_to_plot = roi_results_density./control_results*100;
-%         else
-%             results_to_plot = roi_results_density;
-%         end
+        if normalise_to_sham
+            mean_results = mean(roi_results_density,'omitnan');
+            results_to_plot = roi_results_density./mean_results(1)*100;
+        elseif normalise_to_control
+            results_to_plot = roi_results_density./control_results*100;
+        else
+            results_to_plot = roi_results_density;
+        end
 
         figure,hold on
         x = [ones(max_n,1),2*ones(max_n,1),3*ones(max_n,1),4*ones(max_n,1)];
@@ -466,31 +466,31 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
     var_names = {'Sham vs Gamma','Sham vs Theta','Sham vs LTD'};
 
     p = p_density; h = h_density;
-    file_name = sprintf('%s_density_%d_roi_%s_stats',img_type,roi_idx,roi_fnames{roi_idx});
+    file_name = sprintf('%s_density_stats',img_type);
     save(fullfile(stats_folder,strcat(file_name,'.mat')),'p','h');
     
     stats_T = array2table(p,'VariableNames',var_names,'RowNames',roi_names(roi_idxs));
     table_name = fullfile(stats_folder,strcat(file_name,'.xlsx'));
-    writetable(stats_T,table_name);
+    writetable(stats_T,table_name,'WriteRowNames',true);
 
     if check_count
         p = p_count; h = h_count;
-        file_name = sprintf('%s_count_%d_roi_%s_stats',img_type,roi_idx,roi_fnames{roi_idx});
+        file_name = sprintf('%s_count_stats',img_type);
         save(fullfile(stats_folder,strcat(file_name,'.mat')),'p','h');
 
         stats_T = array2table(p,'VariableNames',var_names,'RowNames',roi_names(roi_idxs));
         table_name = fullfile(stats_folder,strcat(file_name,'.xlsx'));
-        writetable(stats_T,table_name);
+        writetable(stats_T,table_name,'WriteRowNames',true);
     end
     
     if check_perc_positive
         p = p_ratio; h = h_ratio;
-        file_name = sprintf('%s_pos_ratio_%d_roi_%s_stats',img_type,roi_idx,roi_fnames{roi_idx});
+        file_name = sprintf('%s_pos_ratio_stats',img_type);
         save(fullfile(stats_folder,strcat(file_name,'.mat')),'p','h');
 
         stats_T = array2table(p,'VariableNames',var_names,'RowNames',roi_names(roi_idxs));
         table_name = fullfile(stats_folder,strcat(file_name,'.xlsx'));
-        writetable(stats_T,table_name);
+        writetable(stats_T,table_name,'WriteRowNames',true);
     end
     
     %% Plot DAB images for comparison
