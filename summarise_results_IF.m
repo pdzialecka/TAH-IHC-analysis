@@ -98,7 +98,7 @@ function [] = summarise_results_IF(base_folder,cohort_case,close_figs)
     %% Find result files
     result_files = [];
     roi_img_files = [];
-    roi_img_norm_files = [];
+%     roi_img_norm_files = [];
     roi_mask_files = [];
 
     for i = 1:length(data_folders)
@@ -109,14 +109,15 @@ function [] = summarise_results_IF(base_folder,cohort_case,close_figs)
             idx_files = dir(fullfile(data_folder,'IF','Results',m_names{j},strcat('*results.mat')));
             result_files = [result_files; idx_files];
             
-%             idx_2_files = dir(fullfile(data_folder,'IHC','ROI_images',m_names{j},strcat('*',img_type,'*.tif')));
-%             roi_img_files = [roi_img_files; idx_2_files];
+            idx_2_files = dir(fullfile(data_folder,'IF','ROI_images',m_names{j},'*',strcat('*.tif')));
+            idx_2_files(contains({idx_2_files.name}','Merged')) = [];
+            roi_img_files = [roi_img_files; idx_2_files];
 %             
 %             idx_4_files = dir(fullfile(data_folder,'IHC','ROI_images_norm',m_names{j},strcat('*',img_type,'*.tif')));
 %             roi_img_norm_files = [roi_img_norm_files; idx_4_files];
 %             
-%             idx_3_files = dir(fullfile(data_folder,'IHC','Results',m_names{j},strcat('*',img_type,'*mask_accepted.mat')));
-%             roi_mask_files = [roi_mask_files; idx_3_files];
+            idx_3_files = dir(fullfile(data_folder,'IF','Results',m_names{j},strcat('*masks.mat')));
+            roi_mask_files = [roi_mask_files; idx_3_files];
             
         end
 
@@ -127,14 +128,14 @@ function [] = summarise_results_IF(base_folder,cohort_case,close_figs)
     
     %% Sort result files
     [~,s_idxs1] = sort({result_files.name});
-%     [~,s_idxs2] = sort({roi_img_files.name});
+    [~,s_idxs2] = sort({roi_img_files.name});
 %     [~,s_idxs4] = sort({roi_img_norm_files.name});
-%     [~,s_idxs3] = sort({roi_mask_files.name});
+    [~,s_idxs3] = sort({roi_mask_files.name});
 
     result_files = result_files(s_idxs1);
-%     roi_img_files = roi_img_files(s_idxs2);
+    roi_img_files = roi_img_files(s_idxs2);
 %     roi_img_norm_files = roi_img_norm_files(s_idxs4);
-%     roi_mask_files = roi_mask_files(s_idxs3);
+    roi_mask_files = roi_mask_files(s_idxs3);
 
 %     {result_files.name}'
 %     {roi_img_files.name}'
@@ -175,8 +176,8 @@ function [] = summarise_results_IF(base_folder,cohort_case,close_figs)
     variable_names_t = {'Sham','Gamma (40 Hz)','Theta (8 Hz)','LTD (1 Hz)'};
     
 %     [roi_names,roi_fnames,roi_no] = get_roi_list();
-    roi_fnames = {'CA1_L','CA1_R','DG_L','DG_R','cortex_L','cortex_R'};
-    roi_names = {'Left CA1','Right CA1','Left DG','Right DG','Left Cortex',...
+    roi_fnames = {'DG_L','DG_R','CA1_L','CA1_R','cortex_L','cortex_R'};
+    roi_names = {'Left DG','Right DG','Left CA1','Right CA1','Left Cortex',...
         'Right Cortex'};
     roi_no = length(roi_fnames);
     
@@ -281,18 +282,18 @@ function [] = summarise_results_IF(base_folder,cohort_case,close_figs)
         title(roi_names{roi_idx});
         ylabel('Area covered (%)');
 
-%         fig_name = sprintf('%s_density_%d_roi_%s.tif',img_type,roi_idx,roi_fnames{roi_idx});
-%         saveas(gcf,fullfile(cohort_results_folder,fig_name));
-%         if close_figs; close(gcf); end
+        fig_name = sprintf('%s_pos_ratio_%d_roi_%s.tif',img_type,roi_idx,roi_fnames{roi_idx});
+        saveas(gcf,fullfile(cohort_results_folder,fig_name));
+        if close_figs; close(gcf); end
 %         
-%         file_name = sprintf('%s_density_%d_roi_%s_data',img_type,roi_idx,roi_fnames{roi_idx});
-%         save(fullfile(stats_folder,strcat(file_name,'.mat')),'roi_results_density');
+        file_name = sprintf('%s_pos_ratio_%d_roi_%s_results',img_type,roi_idx,roi_fnames{roi_idx});
+        save(fullfile(stats_folder,strcat(file_name,'.mat')),'roi_results_ratio');
         results_ratio_all{roi_idx} = roi_results_ratio;
 %         
 %         % save results as an excel table
-%         roi_results_density_T = array2table(roi_results_ratio,'VariableNames',cond_names); % cond_names
-%         table_name = fullfile(stats_folder,strcat(file_name,'.xlsx'));
-%         writetable(roi_results_density_T,table_name);
+        roi_results_density_T = array2table(roi_results_ratio,'VariableNames',cond_names); % cond_names
+        table_name = fullfile(stats_folder,strcat(file_name,'.xlsx'));
+        writetable(roi_results_density_T,table_name);
         
     end
     
@@ -461,89 +462,77 @@ function [] = summarise_results_IF(base_folder,cohort_case,close_figs)
     file_name = sprintf('%s_pos_ratio_stats',img_type);
     save(fullfile(stats_folder,strcat(file_name,'.mat')),'p','h');
 
-    stats_T = array2table(p,'VariableNames',var_names,'RowNames',roi_names(roi_idxs));
+    stats_T = array2table(p,'VariableNames',var_names,'RowNames',roi_names);
     table_name = fullfile(stats_folder,strcat(file_name,'.xlsx'));
     writetable(stats_T,table_name,'WriteRowNames',true);
     
     %% Plot DAB images for comparison
-    for roi_idx = roi_idxs
-        
-        roi_fname = roi_fnames{roi_idx};
-        img_idxs = find(contains({roi_img_files.name}',roi_fname));
-        
-        roi_results_ratio = results_ratio_all{roi_idx};
-        if isempty(results_count_all)
-            roi_results_count = nan(size(roi_results_ratio));
-        else
-            roi_results_count = results_count_all{roi_idx};
-        end
-        
- 
-        for j = 1:cond_no
-            fig1 = figure('units','normalized','outerposition',[0 0 1 1]);
-            fig2 = figure('units','normalized','outerposition',[0 0 1 1]);
-            fig3 = figure('units','normalized','outerposition',[0 0 1 1]);
-
-            cond_j_names = condition_mouse_names{j};
-            cond_img_idxs = img_idxs((contains({roi_img_files(img_idxs).name}',cond_j_names)));
-%             {roi_img_files(cond_img_idxs).name}'
-
-            % remove nan values
-            roi_results_density_j = roi_results_ratio(:,j);
-            roi_results_count_j = roi_results_count(:,j);
-            
-            missing_idxs = isnan(roi_results_density_j);
-            roi_results_density_j(missing_idxs) = [];
-            roi_results_count_j(missing_idxs) = [];
-        
-            
-            for i = 1:length(cond_img_idxs)
-                % dab images
-                [~,roi_img_dab] = load_deconvolved_images(fullfile(roi_img_files(cond_img_idxs(i)).folder,roi_img_files(cond_img_idxs(i)).name));
-    %             roi_img = load(fullfile(roi_img_files(img_idxs(i)).folder,roi_img_files(img_idxs(i)).name)).roi_image;
-                set(0,'CurrentFigure',fig1)
-                subplot(round(max_n/2),2,i),imshow(roi_img_dab)
-                colormap(dab_colormap)
-                title(roi_img_files(cond_img_idxs(i)).name,'Interpreter','none')
-                
-                % dab images + antibody masks
-                dab_roi_mask = load(fullfile(roi_mask_files(cond_img_idxs(i)).folder,roi_mask_files(cond_img_idxs(i)).name)).dab_roi_mask;
-                roi_img_dab_mask = labeloverlay(roi_img_dab,dab_roi_mask,...
-                    'Colormap',[0,0,1],'Transparency',0.2);
-                
-                set(0,'CurrentFigure',fig2)
-                subplot(round(max_n/2),2,i),imshow(roi_img_dab_mask)
-                title_txt = {roi_mask_files(cond_img_idxs(i)).name,...
-                    sprintf('Cell count = %d; Density = %1.2f %%',roi_results_count_j(i),roi_results_density_j(i))};
-                title(title_txt,'Interpreter','none')
-                
-                 % norm dab images
-                [~,roi_img_norm_dab] = load_deconvolved_images(fullfile(roi_img_norm_files(cond_img_idxs(i)).folder,roi_img_norm_files(cond_img_idxs(i)).name));
-                set(0,'CurrentFigure',fig3)
-                subplot(round(max_n/2),2,i),imshow(roi_img_norm_dab)
-                colormap(dab_colormap)
-                title(roi_img_norm_files(cond_img_idxs(i)).name,'Interpreter','none')
-                
-            end
-            
-            fig_1_name = sprintf('roi_images_%s_%d_%s_%d_%s.tif',img_type,roi_idx,roi_fnames{roi_idx},j,cond_names{j});
-            saveas(fig1,fullfile(comparison_folder,fig_1_name));
-            
-            fig_2_name = sprintf('roi_images_%s_%d_%s_%d_%s_masks.tif',img_type,roi_idx,roi_fnames{roi_idx},j,cond_names{j});
-            saveas(fig2,fullfile(comparison_folder,fig_2_name));
-           
-            fig_3_name = sprintf('roi_images_%s_%d_%s_%d_%s_0_norm.tif',img_type,roi_idx,roi_fnames{roi_idx},j,cond_names{j});
-            saveas(fig3,fullfile(comparison_folder,fig_3_name));
-
-            
-            if close_figs
-                close(fig1);
-                close(fig2);
-                close(fig3);
-            end
-
-        end
-        
-    end
+%     for roi_idx = roi_idxs
+%         
+%         roi_fname = roi_fnames{roi_idx};
+%         img_idxs = find(contains({roi_img_files.name}',roi_fname));
+%         
+%         roi_results_ratio = results_ratio_all{roi_idx};
+%         if isempty(results_count_all)
+%             roi_results_count = nan(size(roi_results_ratio));
+%         else
+%             roi_results_count = results_count_all{roi_idx};
+%         end
+%         
+%  
+%         for j = 1:cond_no
+%             fig1 = figure('units','normalized','outerposition',[0 0 1 1]);
+%             fig2 = figure('units','normalized','outerposition',[0 0 1 1]);
+% 
+%             cond_j_names = condition_mouse_names{j};
+%             cond_img_idxs = img_idxs((contains({roi_img_files(img_idxs).name}',cond_j_names)));
+% %             {roi_img_files(cond_img_idxs).name}'
+% 
+%             % remove nan values
+%             roi_results_density_j = roi_results_ratio(:,j);
+%             roi_results_count_j = roi_results_count(:,j);
+%             
+%             missing_idxs = isnan(roi_results_density_j);
+%             roi_results_density_j(missing_idxs) = [];
+%             roi_results_count_j(missing_idxs) = [];
+%         
+%             
+%             for i = 1:length(cond_img_idxs)
+%                 % dab images
+%                 [~,roi_img_dab] = load_deconvolved_images(fullfile(roi_img_files(cond_img_idxs(i)).folder,roi_img_files(cond_img_idxs(i)).name));
+%     %             roi_img = load(fullfile(roi_img_files(img_idxs(i)).folder,roi_img_files(img_idxs(i)).name)).roi_image;
+%                 set(0,'CurrentFigure',fig1)
+%                 subplot(round(max_n/2),2,i),imshow(roi_img_dab)
+%                 colormap(dab_colormap)
+%                 title(roi_img_files(cond_img_idxs(i)).name,'Interpreter','none')
+%                 
+%                 % dab images + antibody masks
+%                 dab_roi_mask = load(fullfile(roi_mask_files(cond_img_idxs(i)).folder,roi_mask_files(cond_img_idxs(i)).name)).dab_roi_mask;
+%                 roi_img_dab_mask = labeloverlay(roi_img_dab,dab_roi_mask,...
+%                     'Colormap',[0,0,1],'Transparency',0.2);
+%                 
+%                 set(0,'CurrentFigure',fig2)
+%                 subplot(round(max_n/2),2,i),imshow(roi_img_dab_mask)
+%                 title_txt = {roi_mask_files(cond_img_idxs(i)).name,...
+%                     sprintf('Cell count = %d; Density = %1.2f %%',roi_results_count_j(i),roi_results_density_j(i))};
+%                 title(title_txt,'Interpreter','none')
+%                 
+%             end
+%             
+%             fig_1_name = sprintf('roi_images_%s_%d_%s_%d_%s.tif',img_type,roi_idx,roi_fnames{roi_idx},j,cond_names{j});
+%             saveas(fig1,fullfile(comparison_folder,fig_1_name));
+%             
+%             fig_2_name = sprintf('roi_images_%s_%d_%s_%d_%s_masks.tif',img_type,roi_idx,roi_fnames{roi_idx},j,cond_names{j});
+%             saveas(fig2,fullfile(comparison_folder,fig_2_name));
+%            
+%             
+%             if close_figs
+%                 close(fig1);
+%                 close(fig2);
+%             end
+% 
+%         end
+%         
+%     end
     
 end

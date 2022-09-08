@@ -15,7 +15,7 @@ function [] = analyse_data_IF(files,close_figs)
     [r_colormap,g_colormap,~] = create_rgb_colormaps();
     
     %% Plot setts
-    pixel_size = 1/3.5271; % 1um = 3.5271 pixels
+    pixel_size = 0.2840; % from image info; else,1um = 3.5271 pixels
 %     color_map = [0,0,1];
     transparency = 0.5;
     
@@ -126,9 +126,13 @@ function [] = analyse_data_IF(files,close_figs)
 %         end
 
         %% Load reference image
-%         ref_file = dir(fullfile(fileparts(fileparts(fileparts(fileparts(files(1).folder)))),'Reference_images',strcat('*',img_type,'*.tif')));
-%         ref_fname = fullfile(ref_file(1).folder,ref_file(1).name);
-%         [h_image_ref,dab_image_ref,~] = load_deconvolved_images(ref_fname,1);
+        ref_file = dir(fullfile(fileparts(fileparts(fileparts(fileparts(fileparts(files(1).folder))))),'Reference_images','IF',strcat('*.tif')));
+        ref_fname = fullfile(ref_file(1).folder,ref_file(1).name);
+        ref_image = read_file(ref_fname,1);
+        
+        ref_dapi_img = ref_image(:,:,1);
+        ref_iba1_img = ref_image(:,:,2);
+        ref_ab_4g8_img = ref_image(:,:,3);
         
         %% Analysis per ROI
 %         for roi_idx = 1:roi_no
@@ -183,6 +187,12 @@ function [] = analyse_data_IF(files,close_figs)
         dapi_img = imrotate(image(:,:,1),90);
         iba1_img = imrotate(image(:,:,2),90);
         ab_4g8_img = imrotate(image(:,:,3),90);
+        
+        %% Save final ROIs
+        img_fname = fullfile(fileparts(folder),strcat(fname,'.tif'));
+        imwrite(dapi_img,img_fname,'Compression','none','WriteMode','overwrite');
+        imwrite(iba1_img,img_fname,'Compression','none','WriteMode','append');
+        imwrite(ab_4g8_img,img_fname,'Compression','none','WriteMode','append');
 
         %% Smooth images
         spatial_avg = 1;
@@ -221,38 +231,102 @@ function [] = analyse_data_IF(files,close_figs)
         end
         
         %% Normalise images
-        dapi_img_n = imadjust(dapi_img);
-        iba1_img_n = imadjust(iba1_img);
-        ab_4g8_img_n = imadjust(ab_4g8_img);
+        normalise_imgs = 0;
         
-        fig3 = figure('units','normalized','outerposition',[0 0 1 1]);
-        subplot(211),imshow(iba1_img),colormap(r_colormap),title('Original filtered')
-        subplot(212),imshow(iba1_img_n),colormap(r_colormap),title('Normalised')
+        if normalise_imgs
+            dapi_img_n = imadjust(dapi_img);
+            iba1_img_n = imadjust(iba1_img);
+            ab_4g8_img_n = imadjust(ab_4g8_img);
 
-        fig4 = figure('units','normalized','outerposition',[0 0 1 1]);
-        subplot(211),imshow(ab_4g8_img),colormap(g_colormap),title('Original filtered')
-        subplot(212),imshow(ab_4g8_img_n),colormap(g_colormap),title('Normalised')
+            fig3 = figure('units','normalized','outerposition',[0 0 1 1]);
+            subplot(211),imshow(iba1_img),colormap(r_colormap),title('Original filtered')
+            subplot(212),imshow(iba1_img_n),colormap(r_colormap),title('Normalised')
 
-        fname3 = strcat(fname,'_3_iba1_normalised.tif');
-        saveas(fig3,fullfile(results_folder,fname3));
-        if close_figs
-            close(fig3);
+            fig4 = figure('units','normalized','outerposition',[0 0 1 1]);
+            subplot(211),imshow(ab_4g8_img),colormap(g_colormap),title('Original filtered')
+            subplot(212),imshow(ab_4g8_img_n),colormap(g_colormap),title('Normalised')
+
+            fname3 = strcat(fname,'_3_iba1_normalised.tif');
+            saveas(fig3,fullfile(results_folder,fname3));
+            if close_figs
+                close(fig3);
+            end
+
+            fname4 = strcat(fname,'_4_4g8_normalised.tif');
+            saveas(fig4,fullfile(results_folder,fname4));
+            if close_figs
+                close(fig4);
+            end
         end
+        
+        %% Normalise image brightness
+        normalise_brightness = 1;
+        
+        if normalise_brightness
+            iba1_img_n = imhistmatch(iba1_img,ref_iba1_img);
+            ab_4g8_img_n = imhistmatch(ab_4g8_img,ref_ab_4g8_img);
 
-        fname4 = strcat(fname,'_4_4g8_normalised.tif');
-        saveas(fig4,fullfile(results_folder,fname4));
-        if close_figs
-            close(fig4);
+            roi_b_img_folder = fullfile(fileparts(fileparts(fileparts(folder))),'ROI_images_norm',mouse_name);
+            if ~exist(roi_b_img_folder,'dir')
+                mkdir(roi_b_img_folder);
+            end
+
+            img_fname = fullfile(roi_b_img_folder,strcat(fname,'.tif'));
+
+            imwrite(iba1_img_n,img_fname,'Compression','none','WriteMode','overwrite');
+            imwrite(ab_4g8_img_n,img_fname,'Compression','none','WriteMode','append');
+
+            
+            fig3 = figure('units','normalized','outerposition',[0 0 1 1]);
+            subplot(211),imshow(iba1_img),colormap(r_colormap),title('Original filtered')
+            subplot(212),imshow(iba1_img_n),colormap(r_colormap),title('Normalised')
+
+            fig4 = figure('units','normalized','outerposition',[0 0 1 1]);
+            subplot(211),imshow(ab_4g8_img),colormap(g_colormap),title('Original filtered')
+            subplot(212),imshow(ab_4g8_img_n),colormap(g_colormap),title('Normalised')
+
+            fname3 = strcat(fname,'_3_iba1_bc.tif');
+            saveas(fig3,fullfile(results_folder,fname3));
+            if close_figs
+                close(fig3);
+            end
+
+            fname4 = strcat(fname,'_4_4g8_bc.tif');
+            saveas(fig4,fullfile(results_folder,fname4));
+            if close_figs
+                close(fig4);
+            end
+            
+%             iba1_img = iba1_img_n;
+%             ab_4g8_img = ab_4g8_img_n;
+            
         end
-
+        
         %% Create microglia and ab masks
-        iba1_thresh = 0.8*255;
-        ab_4g8_thresh = 0.8*255;
+        if normalise_imgs
+            iba1_thresh = 0.8*255;
+            ab_4g8_thresh = 0.8*255;
+            
+            microglia_mask = iba1_img_n>iba1_thresh;
+            ab_mask = ab_4g8_img_n>ab_4g8_thresh;
+            
+        elseif normalise_brightness
+            iba1_thresh = 0.4; % graythresh(iba1_img)
+            microglia_mask = imbinarize(iba1_img_n,iba1_thresh);
+            
+            ab_4g8_thresh = 0.6;
+            ab_mask = imbinarize(ab_4g8_img_n,ab_4g8_thresh);
+            
+        else % variable threshold
+            iba1_thresh = 0.4; % graythresh(iba1_img)
+            microglia_mask = imbinarize(iba1_img,iba1_thresh);
+            
+            ab_4g8_thresh = 0.5;
+            ab_mask = imbinarize(ab_4g8_img,ab_4g8_thresh);
+        end
         
-        microglia_mask = iba1_img_n>iba1_thresh;
-        ab_mask = ab_4g8_img_n>ab_4g8_thresh;
         
-        % Remove too small and too big elements
+        % remove too small and too big elements
         [~,min_size_1,max_size_1] = get_antibody_threshold('iba1');
         microglia_mask_f = bwpropfilt(microglia_mask,'EquivDiameter',[min_size_1/pixel_size,max_size_1/pixel_size]);
 
@@ -260,14 +334,14 @@ function [] = analyse_data_IF(files,close_figs)
         ab_mask_f = bwpropfilt(ab_mask,'EquivDiameter',[min_size_2/pixel_size,max_size_2/pixel_size]);
 
         %% Visualise the masks
-        iba1_image_mask = labeloverlay(iba1_img_n,microglia_mask,...
+        iba1_image_mask = labeloverlay(iba1_img,microglia_mask,...
             'Colormap',[0,0,1],'Transparency',transparency);
-        iba1_image_mask_f = labeloverlay(iba1_img_n,microglia_mask_f,...
+        iba1_image_mask_f = labeloverlay(iba1_img,microglia_mask_f,...
             'Colormap',[0,0,1],'Transparency',transparency);
 
-        ab_4g8_image_mask = labeloverlay(ab_4g8_img_n,ab_mask,...
+        ab_4g8_image_mask = labeloverlay(ab_4g8_img,ab_mask,...
             'Colormap',[0,0,1],'Transparency',transparency);
-        ab_4g8_image_mask_f = labeloverlay(ab_4g8_img_n,ab_mask_f,...
+        ab_4g8_image_mask_f = labeloverlay(ab_4g8_img,ab_mask_f,...
             'Colormap',[0,0,1],'Transparency',transparency);
         
         fig5 = figure('units','normalized','outerposition',[0 0 1 1]);
@@ -298,7 +372,7 @@ function [] = analyse_data_IF(files,close_figs)
         
         composite_img = imfuse(iba1_img,ab_4g8_img,'ColorChannels',[1 2 0]);
         composite_image_mask = labeloverlay(composite_img,colocalised_mask,...
-            'Colormap',[1,1,0],'Transparency',0.2);
+            'Colormap',[0,0,1],'Transparency',0.2);
        
         fig7 = figure('units','normalized','outerposition',[0 0 1 1]);
         subplot(211),imshow(composite_img),title('Composite image')
@@ -321,8 +395,10 @@ function [] = analyse_data_IF(files,close_figs)
         microglia_ab_pos_area = sum(colocalised_mask,[1,2]);
         
         microglia_ab_ratio = round((microglia_ab_pos_area/microglia_area)*100,2);
+        ab_microglia_ratio = round((ab_area/microglia_area)*100,2);
         fprintf('Microglia ab+ = %1.2f%% for %s\n',microglia_ab_ratio,file);
-        
+        fprintf('Ab microglia+ = %1.2f%% for %s\n',ab_microglia_ratio,file);
+
         %% Save results
         results = [];
         results.orig_img_size = orig_img_size;
@@ -331,6 +407,7 @@ function [] = analyse_data_IF(files,close_figs)
         results.microglia_area = microglia_area;
         results.ab_area = ab_area;
         results.microglia_ab_ratio = microglia_ab_ratio;
+        results.ab_microglia_ratio = ab_microglia_ratio;
         
 %             results.density = density;
 %             results.positive_pixels = positive_pixels;

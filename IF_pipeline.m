@@ -14,6 +14,10 @@ addpath(genpath(analysis_folder));
 base_folder = 'C:\Users\Pat\Desktop\TAH';
 % base_folder = 'K:\TAH';
 
+%% Analysis steps
+analyse = 1;
+summarise = 1;
+
 %% Cohort case
 cohort_case = 2; % 1 = 13mo (cohort 1), 2 = 6mo (cohorts 2-5)
 
@@ -36,16 +40,16 @@ for cohort_idx = 1:length(cohort_folders)
     %%
     if exist(roi_images_folder,'dir')
         %%
+        if analyse
             files = dir(fullfile(roi_images_folder,'*','*','*.tif'));
             files(contains({files.name}','Merged')) = [];
             analyse_data_IF(files);
-            
+        end
     end
 
 end
 
-
-%% Summarise results between animals within age groups
+%% Summarise results between animals
 if summarise
     results_folder = fullfile(base_folder,'IF_results');
     save_cohort_info(results_folder);
