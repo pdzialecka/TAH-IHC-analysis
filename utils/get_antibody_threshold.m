@@ -1,4 +1,4 @@
-function [pixel_thresh,min_size,max_size,do_watershed] = get_antibody_threshold(antibody_type)
+function [pixel_thresh,min_size,max_size,do_watershed,correct_brightness] = get_antibody_threshold(antibody_type)
     %% Define detection threshold for each antibody
     % @author: pdzialecka
     
@@ -6,6 +6,8 @@ function [pixel_thresh,min_size,max_size,do_watershed] = get_antibody_threshold(
     % to higher intensity of antibody labelling required
     
     %%
+    correct_brightness = 1;
+    
     if strcmp(antibody_type,'moc23')
         pixel_thresh = 0.65; % 160;
         min_size = 6; % um
@@ -44,19 +46,20 @@ function [pixel_thresh,min_size,max_size,do_watershed] = get_antibody_threshold(
 
     elseif strcmp(antibody_type,'ki67')
         pixel_thresh = 0.6; % 0.8 with brightness correction
-        min_size = 4;
+        min_size = 3;
         max_size = 30;
         do_watershed = 1;
+        correct_brightness = 0;
 
     elseif strcmp(antibody_type,'dcx')
         pixel_thresh = 0.5; % 0.3 without brightness correction
-        min_size = 4;
+        min_size = 3;
         max_size = 30;
         do_watershed = 0;
         
     elseif strcmp(antibody_type,'sox2')
         pixel_thresh = 0.6;
-        min_size = 4;
+        min_size = 3;
         max_size = 30;
         do_watershed = 1;
 

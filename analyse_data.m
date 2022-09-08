@@ -60,7 +60,7 @@ function [] = analyse_data(files,load_rois,close_figs)
 %             image_type = 'Iba1';
 %         end
         
-        [pixel_thresh,min_size,max_size,do_watershed] = get_antibody_threshold(img_type);
+        [pixel_thresh,min_size,max_size,do_watershed,correct_brightness] = get_antibody_threshold(img_type);
         
     
         %% Results folder
@@ -126,7 +126,7 @@ function [] = analyse_data(files,load_rois,close_figs)
 %         end
 
         %% Load reference image
-        ref_file = dir(fullfile(fileparts(fileparts(fileparts(fileparts(files(1).folder)))),'Reference_images',strcat('*',img_type,'*.tif')));
+        ref_file = dir(fullfile(fileparts(fileparts(fileparts(fileparts(files(1).folder)))),'Reference_images','IHC',strcat('*',img_type,'*.tif')));
         ref_fname = fullfile(ref_file(1).folder,ref_file(1).name);
         [h_image_ref,dab_image_ref,~] = load_deconvolved_images(ref_fname,1);
         
@@ -145,13 +145,13 @@ function [] = analyse_data(files,load_rois,close_figs)
             [h_image_roi,dab_image_roi,~] = load_deconvolved_images(file_path);
             
             %% Normalise brightness based on the reference image
-            if strcmp(img_type,'ki67') || strcmp(img_type,'cfos')
-                normalise_brightness = 0;
-            else
-                normalise_brightness = 1;
-            end
+%             if strcmp(img_type,'ki67') || strcmp(img_type,'cfos')
+%                 normalise_brightness = 0;
+%             else
+%                 normalise_brightness = 1;
+%             end
             
-            if normalise_brightness
+            if correct_brightness
                 h_image_roi = imhistmatch(h_image_roi,h_image_ref);
     %             if ~contains(fname,'cfos')
                 dab_image_roi = imhistmatch(dab_image_roi,dab_image_ref);
@@ -607,19 +607,6 @@ function [] = analyse_data(files,load_rois,close_figs)
                 fprintf('Cfos positive cells = %1.1f %% \n',pos_particle_ratio);
             end
             
-            %% Save final masks
-            mask_name1 = strcat(fname,'_mask_all');
-            save(fullfile(results_folder,mask_name1),'dab_roi_mask');
-%             fprintf('Mask %s saved\n',mask_name1);
-
-            dab_roi_mask = dab_roi_mask_f;
-
-            mask_name2 = strcat(fname,'_mask_accepted');
-            save(fullfile(results_folder,mask_name2),'dab_roi_mask');
-%             fprintf('Mask %s saved\n',mask_name2);
-
-%             fprintf('Mask for %s saved\n',fname);
-            
             %% Fiji approach
 %             setup_miji();
 %             Miji;
@@ -642,7 +629,25 @@ function [] = analyse_data(files,load_rois,close_figs)
             density = round(positive_pixels/total_pixels*100,2);
 %             fprintf('Area covered for %s ROI = %1.1f %% \n', fname, density)
             fprintf('Area covered = %1.2f %% \n', density)
-
+            
+            %% Exclude images without sufficient slice area
+            min_area = 0.2; % 20% of ROI
+            
+            if tot_n_area < min_area
+                
+                density = nan;
+                positive_pixels = nan;
+                particles_found = nan;
+                particle_no = nan;
+                if strcmp(img_type,'cfos')
+                    pos_particle_ratio = nan;
+                end
+                
+                dab_roi_mask = zeros(size(dab_roi_mask));
+                dab_roi_mask_f = dab_roi_mask;
+                
+                fprintf('WARNING: Excluding results for file %s due to insufficient slice area\n',fname);
+            end
             
             %% Save final mask figure
             title_txt = sprintf('Accepted particles. Cell count = %d, density = %1.2f',...
@@ -657,6 +662,19 @@ function [] = analyse_data(files,load_rois,close_figs)
                 close(fig4);
             end
             
+            %% Save final masks
+            mask_name1 = strcat(fname,'_mask_all');
+            save(fullfile(results_folder,mask_name1),'dab_roi_mask');
+%             fprintf('Mask %s saved\n',mask_name1);
+
+            dab_roi_mask = dab_roi_mask_f;
+
+            mask_name2 = strcat(fname,'_mask_accepted');
+            save(fullfile(results_folder,mask_name2),'dab_roi_mask');
+%             fprintf('Mask %s saved\n',mask_name2);
+
+%             fprintf('Mask for %s saved\n',fname);
+
             %% Save results
             results.fname = fname;
             results.thresh_pixel = pixel_thresh;

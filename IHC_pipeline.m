@@ -21,12 +21,13 @@ create_mask = 0;
 analyse = 0;
 analyse_all = 1;
 summarise = 1;
+summarise_tables = 1;
 
 %% Analysis settings
 % magnification = 20;
 % roi_size_um = [500,500]; % 500 x 500 um
 all_img_types = {'moc23','12f4','ct695','iba1','gfap','cfos','ki67','dcx','sox2'};
-img_type = 'cfos'; % specific analysis
+img_type = 'iba1'; % specific analysis
 
 %% Cohort case
 cohort_case = 2; % 1 = 13mo (cohort 1), 2 = 6mo (cohorts 2-5)
@@ -130,4 +131,10 @@ if summarise
     else
         summarise_results(base_folder,cohort_case,img_type);
     end
+end
+
+%% Create one summary table
+if summarise_tables
+    results_folder = fullfile(base_folder,'IHC_results');
+    make_one_summary_file(results_folder);
 end

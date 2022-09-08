@@ -11,10 +11,10 @@ addpath(genpath(analysis_folder));
 
 %% Specify file to adjust
 % location of the roi tif image
-file_path = 'C:\Users\Pat\Desktop\TAH\Data\Cohort_3\IHC\ROI_images\AD-Hipp33\AD-Hipp33_dcx_2_roi_hipp_DG_R.tif';
+file_path = 'C:\Users\Pat\Desktop\TAH\Data\Cohort_3\IHC\ROI_images\AD-Hipp34\AD-Hipp34_ki67_1_roi_hipp_DG_L.tif';
 
 %% Specify number of areas to remove
-area_no = 2;
+area_no = 1;
 
 %% Find all directories
 [roi_img_folder,roi_fname] = fileparts(file_path);
