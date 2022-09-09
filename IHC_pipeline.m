@@ -17,8 +17,8 @@ base_folder = 'C:\Users\Pat\Desktop\TAH';
 %% Analysis steps
 deconvolve = 0;
 select_rois = 0;
-create_mask = 0;
-analyse = 0;
+create_mask = 1;
+analyse = 1;
 analyse_all = 1;
 summarise = 1;
 summarise_tables = 1;
@@ -124,8 +124,8 @@ if summarise
 
     if analyse_all
         for i = 1:length(all_img_types)
-            image_type_i = all_img_types{i};
-            summarise_results(base_folder,cohort_case,image_type_i);
+            img_type_i = all_img_types{i};
+            summarise_results(base_folder,cohort_case,img_type_i);
         end
 
     else

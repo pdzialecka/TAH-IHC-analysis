@@ -197,7 +197,7 @@ function [] = summarise_results_IF(base_folder,cohort_case,close_figs)
     %% Load results
     results = {};
     roi_microglia_ab_ratio = nan(roi_no,mouse_no);
-    
+    roi_ab_microglia_ratio = nan(roi_no,mouse_no);
 
     for roi_idx = 1:roi_no
         roi_fname = roi_fnames{roi_idx};
@@ -208,6 +208,7 @@ function [] = summarise_results_IF(base_folder,cohort_case,close_figs)
 
             results{roi_idx,i} = load(fullfile(result_files(file_idx).folder,result_files(file_idx).name)).results;
             roi_microglia_ab_ratio(roi_idx,i) = results{roi_idx,i}.microglia_ab_ratio;
+            roi_ab_microglia_ratio(roi_idx,i) = results{roi_idx,i}.ab_microglia_ratio;
             
         end
     end
@@ -282,11 +283,11 @@ function [] = summarise_results_IF(base_folder,cohort_case,close_figs)
         title(roi_names{roi_idx});
         ylabel('Area covered (%)');
 
-        fig_name = sprintf('%s_pos_ratio_%d_roi_%s.tif',img_type,roi_idx,roi_fnames{roi_idx});
+        fig_name = sprintf('%s_pos_ratio_1_%d_roi_%s.tif',img_type,roi_idx,roi_fnames{roi_idx});
         saveas(gcf,fullfile(cohort_results_folder,fig_name));
         if close_figs; close(gcf); end
 %         
-        file_name = sprintf('%s_pos_ratio_%d_roi_%s_results',img_type,roi_idx,roi_fnames{roi_idx});
+        file_name = sprintf('%s_pos_ratio_1_%d_roi_%s_results',img_type,roi_idx,roi_fnames{roi_idx});
         save(fullfile(stats_folder,strcat(file_name,'.mat')),'roi_results_ratio');
         results_ratio_all{roi_idx} = roi_results_ratio;
 %         
@@ -296,6 +297,93 @@ function [] = summarise_results_IF(base_folder,cohort_case,close_figs)
         writetable(roi_results_density_T,table_name);
         
     end
+    
+    %%
+    %% Results summary: percentage of microglia+ ab
+    % sham
+    sham_ratio = roi_ab_microglia_ratio(:,mouse_cond_idxs==1);
+    sham_n = size(sham_ratio,2);
+
+    % 40 Hz
+    gamma_ratio = roi_ab_microglia_ratio(:,mouse_cond_idxs==2);
+    gamma_n = size(gamma_ratio,2);
+
+    % 8 Hz
+    theta_ratio = roi_ab_microglia_ratio(:,mouse_cond_idxs==3);
+    theta_n = size(theta_ratio,2);
+
+    % LTD
+    ltd_ratio = roi_ab_microglia_ratio(:,mouse_cond_idxs==4);
+    ltd_n = size(ltd_ratio,2);
+
+
+    [nanmean(sham_ratio,2),nanmean(gamma_ratio,2),nanmean(theta_ratio,2),nanmean(ltd_ratio,2)]
+    % [nanstd(sham_density,'',2),nanstd(gamma_density,'',2),nanstd(theta_density,'',2),nanstd(ltd_density,'',2)]
+
+    max_n = 7;
+    normalise_to_sham = 0;
+    normalise_to_control = 0;
+    
+%     if normalise_to_control
+%         control_idx = 9;
+%         
+%         roi_results = nan(max_n,4);
+%         roi_results(1:sham_n,1) = sham_density(control_idx,:);
+%         roi_results(1:gamma_n,2) = gamma_density(control_idx,:);
+%         roi_results(1:theta_n,3) = theta_density(control_idx,:);
+%         roi_results(1:ltd_n,4) = ltd_density(control_idx,:);
+%         
+%         control_results = roi_results;
+%     end
+    
+    results_ratio_all = {};
+
+    for roi_idx = 1:roi_no
+    %     figure,boxplot([sham_density(roi_idx,:);gamma_density(roi_idx,:)]',...
+    %         'Labels',conds(1:2));
+
+        roi_results_ratio = nan(max_n,4);
+        roi_results_ratio(1:sham_n,1) = sham_ratio(roi_idx,:);
+        roi_results_ratio(1:gamma_n,2) = gamma_ratio(roi_idx,:);
+        roi_results_ratio(1:theta_n,3) = theta_ratio(roi_idx,:);
+        roi_results_ratio(1:ltd_n,4) = ltd_ratio(roi_idx,:);
+        
+        
+        if normalise_to_sham
+            mean_results = mean(roi_results_ratio,'omitnan');
+            results_to_plot = roi_results_ratio./mean_results(1)*100;
+        elseif normalise_to_control
+            results_to_plot = roi_results_ratio./control_results*100;
+        else
+            results_to_plot = roi_results_ratio;
+        end
+
+        figure,hold on
+        x = [ones(max_n,1),2*ones(max_n,1),3*ones(max_n,1),4*ones(max_n,1)];
+        b = boxchart(results_to_plot);
+        b.BoxFaceColor = [0,0,0];
+        swarmchart(x,results_to_plot,'k','filled','MarkerFaceAlpha',0.8,'MarkerEdgeAlpha',0.8)
+        xticklabels(cond_names)
+%         boxplot(roi_results,'Labels',conds);
+
+        title(roi_names{roi_idx});
+        ylabel('Area covered (%)');
+
+        fig_name = sprintf('%s_pos_ratio_2_%d_roi_%s.tif',img_type,roi_idx,roi_fnames{roi_idx});
+        saveas(gcf,fullfile(cohort_results_folder,fig_name));
+        if close_figs; close(gcf); end
+%         
+        file_name = sprintf('%s_pos_ratio_2_%d_roi_%s_results',img_type,roi_idx,roi_fnames{roi_idx});
+        save(fullfile(stats_folder,strcat(file_name,'.mat')),'roi_results_ratio');
+        results_ratio_all{roi_idx} = roi_results_ratio;
+%         
+%         % save results as an excel table
+        roi_results_density_T = array2table(roi_results_ratio,'VariableNames',cond_names); % cond_names
+        table_name = fullfile(stats_folder,strcat(file_name,'.xlsx'));
+        writetable(roi_results_density_T,table_name);
+        
+    end
+    %%
     
 %     %% Results summary: cell count
 %     results_count_all = {};

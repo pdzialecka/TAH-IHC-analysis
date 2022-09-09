@@ -535,91 +535,92 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
     end
     
     %% Plot DAB images for comparison
-%     [~,~,~,~,correct_brightness] = get_antibody_threshold(img_type);
-%     
-%     for roi_idx = roi_idxs
-%         
-%         roi_fname = roi_fnames{roi_idx};
-%         img_idxs = find(contains({roi_img_files.name}',roi_fname));
-%         
-%         roi_results_density = results_density_all{roi_idx};
-%         if isempty(results_count_all)
-%             roi_results_count = nan(size(roi_results_density));
-%         else
-%             roi_results_count = results_count_all{roi_idx};
-%         end
-%         
-%  
-%         for j = 1:cond_no
-%             fig1 = figure('units','normalized','outerposition',[0 0 1 1]);
-%             fig2 = figure('units','normalized','outerposition',[0 0 1 1]);
-%             
-%             if correct_brightness
-%                 fig3 = figure('units','normalized','outerposition',[0 0 1 1]);
-%             end
-%             
-%             cond_j_names = condition_mouse_names{j};
-%             cond_img_idxs = img_idxs((contains({roi_img_files(img_idxs).name}',cond_j_names)));
-% %             {roi_img_files(cond_img_idxs).name}'
-% 
-%             % remove nan values
-%             roi_results_density_j = roi_results_density(:,j);
-%             roi_results_count_j = roi_results_count(:,j);
-%             
-%             missing_idxs = isnan(roi_results_density_j);
-%             roi_results_density_j(missing_idxs) = [];
-%             roi_results_count_j(missing_idxs) = [];
-%         
-%             
-%             for i = 1:length(cond_img_idxs)
-%                 % dab images
-%                 [~,roi_img_dab] = load_deconvolved_images(fullfile(roi_img_files(cond_img_idxs(i)).folder,roi_img_files(cond_img_idxs(i)).name));
-%     %             roi_img = load(fullfile(roi_img_files(img_idxs(i)).folder,roi_img_files(img_idxs(i)).name)).roi_image;
-%                 set(0,'CurrentFigure',fig1)
-%                 subplot(round(max_n/2),2,i),imshow(roi_img_dab)
-%                 colormap(dab_colormap)
-%                 title(roi_img_files(cond_img_idxs(i)).name,'Interpreter','none')
-%                 
-%                 % dab images + antibody masks
-%                 dab_roi_mask = load(fullfile(roi_mask_files(cond_img_idxs(i)).folder,roi_mask_files(cond_img_idxs(i)).name)).dab_roi_mask;
-%                 roi_img_dab_mask = labeloverlay(roi_img_dab,dab_roi_mask,...
-%                     'Colormap',[0,0,1],'Transparency',0.2);
-%                 
-%                 set(0,'CurrentFigure',fig2)
-%                 subplot(round(max_n/2),2,i),imshow(roi_img_dab_mask)
-%                 title_txt = {roi_mask_files(cond_img_idxs(i)).name,...
-%                     sprintf('Cell count = %d; Density = %1.2f %%',roi_results_count_j(i),roi_results_density_j(i))};
-%                 title(title_txt,'Interpreter','none')
-%                 
-%                  % norm dab images
-%                 if correct_brightness
-%                     [~,roi_img_norm_dab] = load_deconvolved_images(fullfile(roi_img_norm_files(cond_img_idxs(i)).folder,roi_img_norm_files(cond_img_idxs(i)).name));
-%                     set(0,'CurrentFigure',fig3)
-%                     subplot(round(max_n/2),2,i),imshow(roi_img_norm_dab)
-%                     colormap(dab_colormap)
-%                     title(roi_img_norm_files(cond_img_idxs(i)).name,'Interpreter','none')
-%                 end
-%             end
-%             
-%             fig_1_name = sprintf('roi_images_%s_%d_%s_%d_%s.tif',img_type,roi_idx,roi_fnames{roi_idx},j,cond_names{j});
-%             saveas(fig1,fullfile(comparison_folder,fig_1_name));
-%             
-%             fig_2_name = sprintf('roi_images_%s_%d_%s_%d_%s_masks.tif',img_type,roi_idx,roi_fnames{roi_idx},j,cond_names{j});
-%             saveas(fig2,fullfile(comparison_folder,fig_2_name));
-%            
-%             if correct_brightness
-%                 fig_3_name = sprintf('roi_images_%s_%d_%s_%d_%s_0_norm.tif',img_type,roi_idx,roi_fnames{roi_idx},j,cond_names{j});
-%                 saveas(fig3,fullfile(comparison_folder,fig_3_name));
-%             end
-%             
-%             if close_figs
-%                 close(fig1);
-%                 close(fig2);
-%                 if correct_brightness; close(fig3); end
-%             end
-% 
-%         end
-%         
-%     end
+    [~,~,~,~,correct_brightness] = get_antibody_threshold(img_type);
+    
+    for roi_idx = roi_idxs
+        
+        roi_fname = roi_fnames{roi_idx};
+        img_idxs = find(contains({roi_img_files.name}',roi_fname));
+        
+        roi_results_density = results_density_all{roi_idx};
+        if isempty(results_count_all)
+            roi_results_count = nan(size(roi_results_density));
+        else
+            roi_results_count = results_count_all{roi_idx};
+        end
+        
+ 
+        for j = 1:cond_no
+            fig1 = figure('units','normalized','outerposition',[0 0 1 1]);
+            fig2 = figure('units','normalized','outerposition',[0 0 1 1]);
+            
+            if correct_brightness
+                fig3 = figure('units','normalized','outerposition',[0 0 1 1]);
+            end
+            
+            cond_j_names = condition_mouse_names{j};
+            cond_img_idxs = img_idxs((contains({roi_img_files(img_idxs).name}',cond_j_names)));
+%             {roi_img_files(cond_img_idxs).name}'
+
+            % remove nan values
+            roi_results_density_j = roi_results_density(:,j);
+            roi_results_count_j = roi_results_count(:,j);
+            
+            missing_idxs = isnan(roi_results_density_j);
+            if length(cond_img_idxs) == sum(~missing_idxs)
+                roi_results_density_j(missing_idxs) = [];
+                roi_results_count_j(missing_idxs) = [];
+            end
+            
+            for i = 1:length(cond_img_idxs)
+                % dab images
+                [~,roi_img_dab] = load_deconvolved_images(fullfile(roi_img_files(cond_img_idxs(i)).folder,roi_img_files(cond_img_idxs(i)).name));
+    %             roi_img = load(fullfile(roi_img_files(img_idxs(i)).folder,roi_img_files(img_idxs(i)).name)).roi_image;
+                set(0,'CurrentFigure',fig1)
+                subplot(round(max_n/2),2,i),imshow(roi_img_dab)
+                colormap(dab_colormap)
+                title(roi_img_files(cond_img_idxs(i)).name,'Interpreter','none')
+                
+                % dab images + antibody masks
+                dab_roi_mask = load(fullfile(roi_mask_files(cond_img_idxs(i)).folder,roi_mask_files(cond_img_idxs(i)).name)).dab_roi_mask;
+                roi_img_dab_mask = labeloverlay(roi_img_dab,dab_roi_mask,...
+                    'Colormap',[0,0,1],'Transparency',0.2);
+                
+                set(0,'CurrentFigure',fig2)
+                subplot(round(max_n/2),2,i),imshow(roi_img_dab_mask)
+                title_txt = {roi_mask_files(cond_img_idxs(i)).name,...
+                    sprintf('Cell count = %d; Density = %1.2f %%',roi_results_count_j(i),roi_results_density_j(i))};
+                title(title_txt,'Interpreter','none')
+                
+                 % norm dab images
+                if correct_brightness
+                    [~,roi_img_norm_dab] = load_deconvolved_images(fullfile(roi_img_norm_files(cond_img_idxs(i)).folder,roi_img_norm_files(cond_img_idxs(i)).name));
+                    set(0,'CurrentFigure',fig3)
+                    subplot(round(max_n/2),2,i),imshow(roi_img_norm_dab)
+                    colormap(dab_colormap)
+                    title(roi_img_norm_files(cond_img_idxs(i)).name,'Interpreter','none')
+                end
+            end
+            
+            fig_1_name = sprintf('roi_images_%s_%d_%s_%d_%s.tif',img_type,roi_idx,roi_fnames{roi_idx},j,cond_names{j});
+            saveas(fig1,fullfile(comparison_folder,fig_1_name));
+            
+            fig_2_name = sprintf('roi_images_%s_%d_%s_%d_%s_masks.tif',img_type,roi_idx,roi_fnames{roi_idx},j,cond_names{j});
+            saveas(fig2,fullfile(comparison_folder,fig_2_name));
+           
+            if correct_brightness
+                fig_3_name = sprintf('roi_images_%s_%d_%s_%d_%s_0_norm.tif',img_type,roi_idx,roi_fnames{roi_idx},j,cond_names{j});
+                saveas(fig3,fullfile(comparison_folder,fig_3_name));
+            end
+            
+            if close_figs
+                close(fig1);
+                close(fig2);
+                if correct_brightness; close(fig3); end
+            end
+
+        end
+        
+    end
     
 end

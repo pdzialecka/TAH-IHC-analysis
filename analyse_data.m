@@ -600,6 +600,11 @@ function [] = analyse_data(files,load_rois,close_figs)
             fprintf('Analysing ROI %s:\n',fname)
             fprintf('No of particles = %d\n',particle_no)
             
+            %% Measure microglia cell body radius
+            if strcmp(img_type,'iba1')
+                particle_radii = [particles_found.EquivDiameter]/2;
+                fprintf('Mean particle radius = %1.1f um\n',mean(particle_radii));
+            end
             
             %% Estimate number of cfos positive cells
             if strcmp(img_type,'cfos')
@@ -641,6 +646,9 @@ function [] = analyse_data(files,load_rois,close_figs)
                 particle_no = nan;
                 if strcmp(img_type,'cfos')
                     pos_particle_ratio = nan;
+                end
+                if strcmp(img_type,'iba1')
+                    particle_radii = nan;
                 end
                 
                 dab_roi_mask = zeros(size(dab_roi_mask));
@@ -693,6 +701,10 @@ function [] = analyse_data(files,load_rois,close_figs)
             
             if strcmp(img_type,'cfos')
                 results.pos_particle_ratio = pos_particle_ratio;
+            end
+            
+            if strcmp(img_type,'iba1')
+                results.particle_radii = particle_radii;
             end
             
             fname_r = strcat(fname,'_results.mat');
