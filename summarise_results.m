@@ -196,12 +196,20 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
     else
         check_perc_positive = 0;
     end
+    
+    if strcmp(img_type,'iba1')
+        check_size = 1;
+    else
+        check_size = 0;
+    end
+    
 
     %% Load results
     results = {};
     roi_density = nan(roi_no,mouse_no);
     roi_particle_no = nan(roi_no,mouse_no);
     roi_pos_particle_ratio = nan(roi_no,mouse_no);
+    roi_radius = cell(roi_no,mouse_no);
 
     for roi_idx = roi_idxs % 1:roi_no
         roi_fname = roi_fnames{roi_idx};
@@ -214,10 +222,13 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
             roi_density(roi_idx,i) = results{roi_idx,i}.density;
             roi_particle_no(roi_idx,i) = results{roi_idx,i}.particle_no;
             
-            if strcmp(img_type,'cfos')
+            if check_perc_positive
                 roi_pos_particle_ratio(roi_idx,i) = results{roi_idx,i}.pos_particle_ratio;
             end
             
+            if check_size
+                roi_radius{roi_idx,i} = results{roi_idx,i}.particle_radii;
+            end
         end
     end
 
@@ -406,10 +417,10 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
             roi_name = roi_names{roi_idx};
 
             roi_results_ratio = nan(max_n,4);
-            roi_results_ratio(1:sham_n,1) = sham_density(roi_idx,:);
-            roi_results_ratio(1:gamma_n,2) = gamma_density(roi_idx,:);
-            roi_results_ratio(1:theta_n,3) = theta_density(roi_idx,:);
-            roi_results_ratio(1:ltd_n,4) = ltd_density(roi_idx,:);
+            roi_results_ratio(1:sham_n,1) = sham_pos_ratio(roi_idx,:);
+            roi_results_ratio(1:gamma_n,2) = gamma_pos_ratio(roi_idx,:);
+            roi_results_ratio(1:theta_n,3) = theta_pos_ratio(roi_idx,:);
+            roi_results_ratio(1:ltd_n,4) = ltd_pos_ratio(roi_idx,:);
 
             if normalise_to_sham
                 mean_results = mean(roi_results_ratio,'omitnan');
@@ -458,6 +469,80 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
         end
     end
     
+    %% Results summary: size of microglia
+    results_radius_all = {};
+    
+    if check_size
+        
+        sham_radius = roi_radius(roi_idxs,mouse_cond_idxs==1);
+        gamma_radius = roi_radius(roi_idxs,mouse_cond_idxs==2);
+        theta_radius = roi_radius(roi_idxs,mouse_cond_idxs==3);
+        ltd_radius = roi_radius(roi_idxs,mouse_cond_idxs==4);
+
+        for roi_idx = roi_idxs
+            roi_name = roi_names{roi_idx};
+
+%             roi_results_ratio = nan(max_n,4);
+            roi_results_diameter_ = {};
+            roi_results_diameter_{1} = [sham_radius{roi_idx,:}]*2;
+            roi_results_diameter_{2} = [gamma_radius{roi_idx,:}]*2;
+            roi_results_diameter_{3} = [theta_radius{roi_idx,:}]*2;
+            roi_results_diameter_{4} = [ltd_radius{roi_idx,:}]*2;
+            
+            max_n_ = max(cellfun(@length,roi_results_ratio_));
+            roi_results_diameter = nan(max_n_,4);
+            roi_results_ratio(1:length(roi_results_ratio_{1}),1) = roi_results_ratio_{1};
+            roi_results_diameter(1:length(roi_results_ratio_{2}),2) = roi_results_ratio_{2};
+            roi_results_diameter(1:length(roi_results_ratio_{3}),3) = roi_results_ratio_{3};
+            roi_results_diameter(1:length(roi_results_ratio_{4}),4) = roi_results_ratio_{4};
+
+
+%             if normalise_to_sham
+%                 mean_results = mean(roi_results_ratio,'omitnan');
+%                 results_to_plot = (roi_results_ratio./mean_results(1)-1)*100;
+%             elseif normalise_to_control
+%                 results_to_plot = roi_results_ratio./control_results*100;
+%             else
+            results_to_plot = roi_results_diameter; % plot diameter
+%             end
+
+            figure,hold on
+            x = [ones(max_n_,1),2*ones(max_n_,1),3*ones(max_n_,1),4*ones(max_n_,1)];
+            b = boxchart(results_to_plot);
+            b.BoxFaceColor = [0,0,0]; b.MarkerColor = [0,0,0];
+            swarmchart(x,results_to_plot,'k','filled','MarkerFaceAlpha',0.05,'MarkerEdgeAlpha',0.1)
+            xticklabels(cond_names)
+
+            title(roi_names{roi_idx});
+            ylabel('Cell diameter (μm)');
+
+            fig_name = sprintf('%s_diameter_%d_roi_%s.tif',img_type,roi_idx,roi_fnames{roi_idx});
+            saveas(gcf,fullfile(cohort_results_folder,fig_name));
+            if close_figs; close(gcf); end
+            
+            results_radius_all{roi_idx} = roi_results_ratio;
+
+            file_name = sprintf('%s_diameter_%d_roi_%s_results',img_type,roi_idx,roi_fnames{roi_idx});
+            save(fullfile(stats_folder,strcat(file_name,'.mat')),'roi_results_ratio');
+
+            % save results as an excel table
+%             row_names = {};
+%             for i = 1:max_n; row_names{i} = [roi_name,' ',num2str(i)]; end
+% 
+%             roi_results_ratio_T = array2table(roi_results_ratio,'VariableNames',...
+%                 cond_names,'RowNames',row_names);
+% 
+%             % add mean and std
+%             extra_T = array2table([mean(roi_results_ratio,'omitnan');std(roi_results_ratio,'omitnan')],...
+%                 'VariableNames',cond_names,'RowNames',{'Mean','Std'});
+%             roi_results_ratio_T = [roi_results_ratio_T; extra_T];
+%             
+%             table_name = fullfile(stats_folder,strcat(file_name,'.xlsx'));
+%             writetable(roi_results_ratio_T,table_name,'WriteRowNames',true);
+
+        end
+    end
+    
     %% Statistics
     % not all data normally distributed; use wilcoxon test instead of ttest
     
@@ -469,6 +554,9 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
     
     p_ratio = nan(length(roi_idxs),3);
     h_ratio = nan(length(roi_idxs),3);
+    
+    p_diameter = nan(length(roi_idxs),3);
+    h_diameter = nan(length(roi_idxs),3);
         
     
     for roi_idx = roi_idxs

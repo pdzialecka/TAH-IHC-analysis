@@ -6,7 +6,7 @@ function [] = make_one_summary_file(summary_folder)
     cohort_subfolder = 'Cohorts_2-5_6mo';
     fname_1 = fullfile(summary_folder,cohort_subfolder,'IHC_density_results.xlsx');
     fname_2 = fullfile(summary_folder,cohort_subfolder,'IHC_count_results.xlsx');
-    fname_3 = fullfile(summary_folder,cohort_subfolder,'IHC_ratio_results.xlsx');
+    fname_3 = fullfile(summary_folder,cohort_subfolder,'IHC_cfos_ratio_results.xlsx');
 
 %     cond_names = {'Sham','40 Hz','8 Hz','LTD'};
 %         var_names = {'Sham vs Gamma','Sham vs Theta','Sham vs LTD'};
