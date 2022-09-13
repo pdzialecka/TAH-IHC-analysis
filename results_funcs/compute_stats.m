@@ -7,7 +7,11 @@ function [p,h] = compute_stats(quantity_to_plot_all,quantity_name,img_type,...
     % not all data normally distributed; use wilcoxon test instead of ttest
 
     %%
-    [roi_names,~,roi_no] = get_roi_list();
+    if length(quantity_to_plot_all) == 6
+        [roi_names,~,roi_no] = get_roi_list_IF();
+    else
+        [roi_names,~,roi_no] = get_roi_list();
+    end
     var_names = {'Gamma vs Sham','Theta vs Sham','LTD vs Sham'};
 
     %%

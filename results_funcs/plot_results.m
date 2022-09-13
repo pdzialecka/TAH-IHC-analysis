@@ -4,7 +4,11 @@ function [results_all] = plot_results(quantity_to_plot,quantity_name,...
     % @author: pdzialecka
     
     %%
-    [roi_names,roi_fnames,roi_no] = get_roi_list();
+    if size(quantity_to_plot,1) == 6
+        [roi_names,roi_fnames,roi_no] = get_roi_list_IF();
+    else
+        [roi_names,roi_fnames,roi_no] = get_roi_list();
+    end
     cond_names = {'Sham','40 Hz','8 Hz','LTD'};
     close_figs = 1;
     
@@ -24,6 +28,7 @@ function [results_all] = plot_results(quantity_to_plot,quantity_name,...
     end  
     
     %%
+    % IHC
     if strcmp(quantity_name,'density')
         ylabel_ = 'Area covered (%)';
         y_round = 0.25;
@@ -35,6 +40,14 @@ function [results_all] = plot_results(quantity_to_plot,quantity_name,...
         y_round = 0.25;
     elseif strcmp(quantity_name,'size')
         ylabel_ = 'Cell diameter (μm)';
+        y_round = 10;
+        
+    % IF
+    elseif strcmp(quantity_name,'microglia_ratio')
+        ylabel_ = '% of Aβ positive microglia';
+        y_round = 10;
+    elseif strcmp(quantity_name,'ab_ratio')
+        ylabel_ = '% of microglia positive Aβ';
         y_round = 10;
     end
     
