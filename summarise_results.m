@@ -177,13 +177,11 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
 
     [roi_names,roi_fnames,roi_no] = get_roi_list();
     
-%     if strcmp(img_type,'ki67') || strcmp(img_type,'dcx') || strcmp(img_type,'sox2')
-%         roi_idxs = [1:2]; % DG only
-%     else
-%         roi_idxs = 1:roi_no;
-%     end
-    
     roi_idxs = 1:roi_no;
+    
+    if strcmp(img_type,'ki67') || strcmp(img_type,'dcx') || strcmp(img_type,'sox2')
+        roi_idxs = [1:2]; % DG only. keep cortex too?
+    end
     
     %% Results to summarise
     if strcmp(img_type,'dcx')
@@ -484,7 +482,7 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
     
     if check_size
         
-        results_size_all = plot_results(roi_radius,'size',...
+        results_size_all = plot_results(roi_size,'size',...
             mouse_cond_idxs,img_type,cohort_results_folder,roi_idxs,1);
 
 %         sham_radius = roi_radius(roi_idxs,mouse_cond_idxs==1);
@@ -556,104 +554,121 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
 %         end
     end
     
-    %% Statistics
-    % not all data normally distributed; use wilcoxon test instead of ttest
-    
-    p_density = nan(length(roi_idxs),3);
-    h_density = nan(length(roi_idxs),3);
-    
-    p_count = nan(length(roi_idxs),3);
-    h_count = nan(length(roi_idxs),3);
-    
-    p_cfos_ratio = nan(length(roi_idxs),3);
-    h_cfos_ratio = nan(length(roi_idxs),3);
-    
-    p_size = nan(length(roi_idxs),3);
-    h_size = nan(length(roi_idxs),3);
-        
-    
-    for roi_idx = roi_idxs
-        
-        % DENSITY
-        results_density = results_density_all{roi_idx};
-    %     [h,p] = kstest(results_density); % h = 0 if normally distributed
-
-        % compare all stims to sham
-        [p_density(roi_idx,1),h_density(roi_idx,1)] = ranksum(results_density(:,1),results_density(:,2));
-        [p_density(roi_idx,2),h_density(roi_idx,2)] = ranksum(results_density(:,1),results_density(:,3));
-        [p_density(roi_idx,3),h_density(roi_idx,3)] = ranksum(results_density(:,1),results_density(:,4));
-        
-        
-        % CELL COUNT
-        if check_count
-            results_count = results_count_all{roi_idx};
-
-            [p_count(roi_idx,1),h_count(roi_idx,1)] = ranksum(results_count(:,1),results_count(:,2));
-            [p_count(roi_idx,2),h_count(roi_idx,2)] = ranksum(results_count(:,1),results_count(:,3));
-            [p_count(roi_idx,3),h_count(roi_idx,3)] = ranksum(results_count(:,1),results_count(:,4));     
-        end
-        
-        % CFOS CFOS POSITIVE RATIO
-        if check_perc_positive
-            results_ratio = results_ratio_all{roi_idx};
-            
-            [p_cfos_ratio(roi_idx,1),h_cfos_ratio(roi_idx,1)] = ranksum(results_ratio(:,1),results_ratio(:,2));
-            [p_cfos_ratio(roi_idx,2),h_cfos_ratio(roi_idx,2)] = ranksum(results_ratio(:,1),results_ratio(:,3));
-            [p_cfos_ratio(roi_idx,3),h_cfos_ratio(roi_idx,3)] = ranksum(results_ratio(:,1),results_ratio(:,4));     
-        end
-        
-        % IBA1 SIZE
-        if check_size
-            results_size = results_size_all{roi_idx};
-            
-            [p_size(roi_idx,1),h_size(roi_idx,1)] = ranksum(results_size(:,1),results_size(:,2));
-            [p_size(roi_idx,2),h_size(roi_idx,2)] = ranksum(results_size(:,1),results_size(:,3));
-            [p_size(roi_idx,3),h_size(roi_idx,3)] = ranksum(results_size(:,1),results_size(:,4));     
-        end
-    end
-    
-    
-    %% Save stats
-    var_names = {'Gamma vs Sham','Theta vs Sham','LTD vs Sham'};
-
-    p = p_density; h = h_density;
-    file_name = sprintf('%s_density_stats',img_type);
-    save(fullfile(stats_folder,strcat(file_name,'.mat')),'p','h');
-    
-    stats_T = array2table(p,'VariableNames',var_names,'RowNames',roi_names(roi_idxs));
-    table_name = fullfile(stats_folder,strcat(file_name,'.xlsx'));
-    writetable(stats_T,table_name,'WriteRowNames',true);
+    %% Check and save stats
+    [p_density,h_density] = compute_stats(results_density_all,'density',...
+                            img_type,stats_folder,roi_idxs,1);
 
     if check_count
-        p = p_count; h = h_count;
-        file_name = sprintf('%s_count_stats',img_type);
-        save(fullfile(stats_folder,strcat(file_name,'.mat')),'p','h');
-
-        stats_T = array2table(p,'VariableNames',var_names,'RowNames',roi_names(roi_idxs));
-        table_name = fullfile(stats_folder,strcat(file_name,'.xlsx'));
-        writetable(stats_T,table_name,'WriteRowNames',true);
+        [p_count,h_count] = compute_stats(results_count_all,'count',...
+                            img_type,stats_folder,roi_idxs,1);
     end
     
     if check_perc_positive
-        p = p_cfos_ratio; h = h_cfos_ratio;
-        file_name = sprintf('%s_cfos_ratio_stats',img_type);
-        save(fullfile(stats_folder,strcat(file_name,'.mat')),'p','h');
-
-        stats_T = array2table(p,'VariableNames',var_names,'RowNames',roi_names(roi_idxs));
-        table_name = fullfile(stats_folder,strcat(file_name,'.xlsx'));
-        writetable(stats_T,table_name,'WriteRowNames',true);
+        [p_cfos_ratio,h_cfos_ratio] = compute_stats(results_ratio_all,'ratio',...
+                    img_type,stats_folder,roi_idxs,1);
     end
     
     if check_size
-        p = p_size; h = h_size;
-        file_name = sprintf('%s_size_stats',img_type);
-        save(fullfile(stats_folder,strcat(file_name,'.mat')),'p','h');
-
-        stats_T = array2table(p,'VariableNames',var_names,'RowNames',roi_names(roi_idxs));
-        table_name = fullfile(stats_folder,strcat(file_name,'.xlsx'));
-        writetable(stats_T,table_name,'WriteRowNames',true);
-
+        [p_size,h_size] = compute_stats(results_size_all,'size',...
+                    img_type,stats_folder,roi_idxs,1);
     end
+    
+    % not all data normally distributed; use wilcoxon test instead of ttest
+%     p_density = nan(length(roi_idxs),3);
+%     h_density = nan(length(roi_idxs),3);
+%     
+%     p_count = nan(length(roi_idxs),3);
+%     h_count = nan(length(roi_idxs),3);
+%     
+%     p_ratio = nan(length(roi_idxs),3);
+%     h_ratio = nan(length(roi_idxs),3);
+%     
+%     p_size = nan(length(roi_idxs),3);
+%     h_size = nan(length(roi_idxs),3);
+%         
+%     
+%     for roi_idx = roi_idxs
+%         
+%         % DENSITY
+%         results_density = results_density_all{roi_idx};
+%     %     [h,p] = kstest(results_density); % h = 0 if normally distributed
+% 
+%         % compare all stims to sham
+%         [p_density(roi_idx,1),h_density(roi_idx,1)] = ranksum(results_density(:,1),results_density(:,2));
+%         [p_density(roi_idx,2),h_density(roi_idx,2)] = ranksum(results_density(:,1),results_density(:,3));
+%         [p_density(roi_idx,3),h_density(roi_idx,3)] = ranksum(results_density(:,1),results_density(:,4));
+%         
+%         
+%         % CELL COUNT
+%         if check_count
+%             results_count = results_count_all{roi_idx};
+% 
+%             [p_count(roi_idx,1),h_count(roi_idx,1)] = ranksum(results_count(:,1),results_count(:,2));
+%             [p_count(roi_idx,2),h_count(roi_idx,2)] = ranksum(results_count(:,1),results_count(:,3));
+%             [p_count(roi_idx,3),h_count(roi_idx,3)] = ranksum(results_count(:,1),results_count(:,4));     
+%         end
+%         
+%         % CFOS CFOS POSITIVE RATIO
+%         if check_perc_positive
+%             results_ratio = results_ratio_all{roi_idx};
+%             
+%             [p_ratio(roi_idx,1),h_ratio(roi_idx,1)] = ranksum(results_ratio(:,1),results_ratio(:,2));
+%             [p_ratio(roi_idx,2),h_ratio(roi_idx,2)] = ranksum(results_ratio(:,1),results_ratio(:,3));
+%             [p_ratio(roi_idx,3),h_ratio(roi_idx,3)] = ranksum(results_ratio(:,1),results_ratio(:,4));     
+%         end
+%         
+%         % IBA1 SIZE
+%         if check_size
+%             results_size = results_size_all{roi_idx};
+%             
+%             [p_size(roi_idx,1),h_size(roi_idx,1)] = ranksum(results_size(:,1),results_size(:,2));
+%             [p_size(roi_idx,2),h_size(roi_idx,2)] = ranksum(results_size(:,1),results_size(:,3));
+%             [p_size(roi_idx,3),h_size(roi_idx,3)] = ranksum(results_size(:,1),results_size(:,4));     
+%         end
+%     end
+    
+    
+    %% Save stats
+%     var_names = {'Gamma vs Sham','Theta vs Sham','LTD vs Sham'};
+% 
+%     p = p_density; h = h_density;
+%     file_name = sprintf('%s_density_stats',img_type);
+%     save(fullfile(stats_folder,strcat(file_name,'.mat')),'p','h');
+%     
+%     stats_T = array2table(p,'VariableNames',var_names,'RowNames',roi_names(roi_idxs));
+%     table_name = fullfile(stats_folder,strcat(file_name,'.xlsx'));
+%     writetable(stats_T,table_name,'WriteRowNames',true);
+% 
+%     if check_count
+%         p = p_count; h = h_count;
+%         file_name = sprintf('%s_count_stats',img_type);
+%         save(fullfile(stats_folder,strcat(file_name,'.mat')),'p','h');
+% 
+%         stats_T = array2table(p,'VariableNames',var_names,'RowNames',roi_names(roi_idxs));
+%         table_name = fullfile(stats_folder,strcat(file_name,'.xlsx'));
+%         writetable(stats_T,table_name,'WriteRowNames',true);
+%     end
+%     
+%     if check_perc_positive
+%         p = p_ratio; h = h_ratio;
+%         file_name = sprintf('%s_ratio_stats',img_type);
+%         save(fullfile(stats_folder,strcat(file_name,'.mat')),'p','h');
+% 
+%         stats_T = array2table(p,'VariableNames',var_names,'RowNames',roi_names(roi_idxs));
+%         table_name = fullfile(stats_folder,strcat(file_name,'.xlsx'));
+%         writetable(stats_T,table_name,'WriteRowNames',true);
+%     end
+%     
+%     if check_size
+%         p = p_size; h = h_size;
+%         file_name = sprintf('%s_size_stats',img_type);
+%         save(fullfile(stats_folder,strcat(file_name,'.mat')),'p','h');
+% 
+%         stats_T = array2table(p,'VariableNames',var_names,'RowNames',roi_names(roi_idxs));
+%         table_name = fullfile(stats_folder,strcat(file_name,'.xlsx'));
+%         writetable(stats_T,table_name,'WriteRowNames',true);
+% 
+%     end
     
     %% Plot DAB images for comparison
     [~,~,~,~,correct_brightness] = get_antibody_threshold(img_type);
@@ -664,7 +679,7 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
         img_idxs = find(contains({roi_img_files.name}',roi_fname));
         
         roi_results_density = results_density_all{roi_idx};
-        if isempty(results_count_all)
+        if ~check_count
             roi_results_count = nan(size(roi_results_density));
         else
             roi_results_count = results_count_all{roi_idx};

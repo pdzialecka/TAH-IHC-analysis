@@ -8,7 +8,8 @@ function [] = make_one_summary_file(summary_folder)
     cohort_subfolder = 'Cohorts_2-5_6mo';
     fname_1 = fullfile(summary_folder,cohort_subfolder,'IHC_density_results.xlsx');
     fname_2 = fullfile(summary_folder,cohort_subfolder,'IHC_count_results.xlsx');
-    fname_3 = fullfile(summary_folder,cohort_subfolder,'IHC_cfos_ratio_results.xlsx');
+    fname_3 = fullfile(summary_folder,cohort_subfolder,'IHC_ratio_results.xlsx');
+    fname_4 = fullfile(summary_folder,cohort_subfolder,'IHC_size_results.xlsx');
 
 %     cond_names = {'Sham','40 Hz','8 Hz','LTD'};
 %         var_names = {'Sham vs Gamma','Sham vs Theta','Sham vs LTD'};
@@ -43,6 +44,13 @@ function [] = make_one_summary_file(summary_folder)
         if ~isempty(t_results_3)
             writetable(t_results_3,fname_3,'Sheet',strcat(img_type,'_results'));
             writetable(t_stats_3,fname_3,'Sheet',strcat(img_type,'_stats'));
+        end
+        
+        % CELL SIZE (IBA1)
+        [t_results_4,t_stats_4] = extract_results(result_files,stats_files,'size');
+        if ~isempty(t_results_4)
+            writetable(t_results_4,fname_4,'Sheet',strcat(img_type,'_results'));
+            writetable(t_stats_4,fname_4,'Sheet',strcat(img_type,'_stats'));
         end
         
     end

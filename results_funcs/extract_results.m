@@ -1,5 +1,6 @@
 function [t_results,t_stats] = extract_results(result_files,stats_files,result_type)
-    %%
+    %% Extract all results of a given type
+    % @author: pdzialecka
     
     %%
     result_files_ = result_files(contains({result_files.name}',result_type));
