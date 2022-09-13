@@ -1,5 +1,7 @@
 function [] = make_one_summary_file(summary_folder)
-
+    %% Create one summary file per quantity type
+    % @author: pdzialecka
+    
     %%
     all_img_types = {'moc23','12f4','ct695','iba1','gfap','cfos','ki67','dcx','sox2'};
     

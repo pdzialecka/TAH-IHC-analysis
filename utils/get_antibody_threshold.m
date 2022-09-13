@@ -9,7 +9,7 @@ function [pixel_thresh,min_size,max_size,do_watershed,correct_brightness] = get_
     correct_brightness = 1;
     
     if strcmp(antibody_type,'moc23')
-        pixel_thresh = 0.65; % 160;
+        pixel_thresh = 0.65;
         min_size = 6; % um
         max_size = 100;
         do_watershed = 0;
