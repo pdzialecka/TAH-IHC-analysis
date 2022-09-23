@@ -29,13 +29,13 @@ function [pixel_thresh,min_size,max_size,do_watershed,correct_brightness] = get_
     elseif strcmp(antibody_type,'iba1')
         pixel_thresh = 0.5;
         min_size = 4;
-        max_size = 100;
+        max_size = 50;
         do_watershed = 0;
         
     elseif strcmp(antibody_type,'gfap')
         pixel_thresh = 0.45; % 0.3
         min_size = 4;
-        max_size = 100;
+        max_size = 50;
         do_watershed = 0;
         
     elseif strcmp(antibody_type,'cfos')
