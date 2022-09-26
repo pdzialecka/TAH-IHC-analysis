@@ -152,6 +152,10 @@ function [] = summarise_results_IF(base_folder,cohort_case,close_figs)
     results = {};
     roi_microglia_ab_ratio = nan(roi_no,mouse_no);
     roi_ab_microglia_ratio = nan(roi_no,mouse_no);
+    
+    roi_microglia_ab_area_ratio = nan(roi_no,mouse_no);
+    roi_ab_microglia_area_ratio = nan(roi_no,mouse_no);
+
 
     for roi_idx = 1:roi_no
         roi_fname = roi_fnames{roi_idx};
@@ -161,8 +165,14 @@ function [] = summarise_results_IF(base_folder,cohort_case,close_figs)
             file_idx = file_idxs(i);
 
             results{roi_idx,i} = load(fullfile(result_files(file_idx).folder,result_files(file_idx).name)).results;
+            
+            % count ratio
             roi_microglia_ab_ratio(roi_idx,i) = results{roi_idx,i}.microglia_ab_ratio;
             roi_ab_microglia_ratio(roi_idx,i) = results{roi_idx,i}.ab_microglia_ratio;
+            
+            % area ratio
+            roi_microglia_ab_area_ratio(roi_idx,i) = results{roi_idx,i}.microglia_ab_area_ratio;
+            roi_ab_microglia_area_ratio(roi_idx,i) = results{roi_idx,i}.ab_microglia_area_ratio;
             
         end
     end
@@ -175,11 +185,26 @@ function [] = summarise_results_IF(base_folder,cohort_case,close_figs)
     results_ratio_2_all = plot_results(roi_ab_microglia_ratio,'ab_ratio',...
         mouse_cond_idxs,img_type,cohort_results_folder);
     
+    %% Results summary: percentage of ab+ microglia (AREA)
+    results_ratio_1_area_all = plot_results(roi_microglia_ab_area_ratio,'microglia_area_ratio',...
+        mouse_cond_idxs,img_type,cohort_results_folder);
+
+    %% Results summary: percentage of microglia+ ab (AREA)
+    results_ratio_2_area_all = plot_results(roi_ab_microglia_area_ratio,'ab_area_ratio',...
+        mouse_cond_idxs,img_type,cohort_results_folder);
+    
     %% Statistics
     [p_ratio_1,h_ratio_1] = compute_stats(results_ratio_1_all,'microglia_ratio',...
                             img_type,stats_folder);
                         
     [p_ratio_2,h_ratio_2] = compute_stats(results_ratio_2_all,'ab_ratio',...
+                            img_type,stats_folder);
+                        
+    % overlap area
+    [p_ratio_1_area,h_ratio_1_area] = compute_stats(results_ratio_1_area_all,'microglia_area_ratio',...
+                            img_type,stats_folder);
+                        
+    [p_ratio_2_area,h_ratio_2_area] = compute_stats(results_ratio_2_area_all,'ab_area_ratio',...
                             img_type,stats_folder);
      
     %% Plot DAB images for comparison

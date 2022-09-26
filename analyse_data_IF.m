@@ -25,6 +25,13 @@ function [] = analyse_data_IF(files,close_figs)
         file = files(idx).name;
         folder = files(idx).folder;
         fname = file(1:end-4);
+        
+        %%
+%         if contains(file,'CA1')
+%             smooth_ref = 0;
+%         else
+%             smooth_ref = 1;
+%         end
     
         %% Results folder
         results_folder = fullfile(fileparts(fileparts(fileparts(folder))),'Results');
@@ -38,6 +45,7 @@ function [] = analyse_data_IF(files,close_figs)
         end
 
         %% Load reference image
+        warning ('off','all');
         roi_name = find_img_type(file);
         
         ref_file = dir(fullfile(fileparts(fileparts(fileparts(fileparts(fileparts(files(1).folder))))),'Reference_images','IF',strcat('*',roi_name,'*.tif')));
@@ -58,6 +66,7 @@ function [] = analyse_data_IF(files,close_figs)
         %% Load ROI image
         file_path = fullfile(folder,file);
         image = read_file(file_path);
+        warning ('on','all');
         
         %%
         img_size = size(image,[1,2]);
@@ -106,49 +115,50 @@ function [] = analyse_data_IF(files,close_figs)
         imwrite(ab_4g8_img,img_fname,'Compression','none','WriteMode','append');
 
         %% Smooth images + subtract background
-        subtract_bkg = 1;
-        spatial_avg = 1;
-        
-        if spatial_avg
-%             k3 = 9;
-%             box_kernel = ones(k3,k3)*1/(k3*k3);
-            
-%             dapi_img_f = imfilter(dapi_img,box_kernel,'replicate');
-            iba1_img_f = imfilter(iba1_img,box_kernel,'replicate');
-            ab_4g8_img_f = imfilter(ab_4g8_img,box_kernel,'replicate');
-            
-            if subtract_bkg
-                se2 = strel('disk',100);
+        if smooth_ref
+            subtract_bkg = 1;
+            spatial_avg = 1;
 
-                iba1_img_f = imsubtract(iba1_img_f,imopen(iba1_img_f,se2));
-                ab_4g8_img_f = imsubtract(ab_4g8_img_f,imopen(ab_4g8_img_f,se2));
+            if spatial_avg
+    %             k3 = 9;
+    %             box_kernel = ones(k3,k3)*1/(k3*k3);
+
+    %             dapi_img_f = imfilter(dapi_img,box_kernel,'replicate');
+                iba1_img_f = imfilter(iba1_img,box_kernel,'replicate');
+                ab_4g8_img_f = imfilter(ab_4g8_img,box_kernel,'replicate');
+
+                if subtract_bkg
+                    se2 = strel('disk',100);
+
+                    iba1_img_f = imsubtract(iba1_img_f,imopen(iba1_img_f,se2));
+                    ab_4g8_img_f = imsubtract(ab_4g8_img_f,imopen(ab_4g8_img_f,se2));
+                end
+
+                fig1 = figure('units','normalized','outerposition',[0 0 1 1]);
+                subplot(211),imshow(iba1_img),colormap(r_colormap),title('Original')
+                subplot(212),imshow(iba1_img_f),colormap(r_colormap),title('Filtered')
+
+                fig2 = figure('units','normalized','outerposition',[0 0 1 1]);
+                subplot(211),imshow(ab_4g8_img),colormap(g_colormap),title('Original')
+                subplot(212),imshow(ab_4g8_img_f),colormap(g_colormap),title('Filtered')
+
+                fname1 = strcat(fname,'_2_iba1_filtered.tif');
+                saveas(fig1,fullfile(results_folder,fname1));
+                if close_figs
+                    close(fig1);
+                end
+
+                fname2 = strcat(fname,'_5_4g8_filtered.tif');
+                saveas(fig2,fullfile(results_folder,fname2));
+                if close_figs
+                    close(fig2);
+                end
+    % 
+    %             dapi_img = dapi_img_f;
+                iba1_img = iba1_img_f;
+                ab_4g8_img = ab_4g8_img_f;
             end
-            
-            fig1 = figure('units','normalized','outerposition',[0 0 1 1]);
-            subplot(211),imshow(iba1_img),colormap(r_colormap),title('Original')
-            subplot(212),imshow(iba1_img_f),colormap(r_colormap),title('Filtered')
-
-            fig2 = figure('units','normalized','outerposition',[0 0 1 1]);
-            subplot(211),imshow(ab_4g8_img),colormap(g_colormap),title('Original')
-            subplot(212),imshow(ab_4g8_img_f),colormap(g_colormap),title('Filtered')
-
-            fname1 = strcat(fname,'_2_iba1_filtered.tif');
-            saveas(fig1,fullfile(results_folder,fname1));
-            if close_figs
-                close(fig1);
-            end
-
-            fname2 = strcat(fname,'_5_4g8_filtered.tif');
-            saveas(fig2,fullfile(results_folder,fname2));
-            if close_figs
-                close(fig2);
-            end
-% 
-%             dapi_img = dapi_img_f;
-            iba1_img = iba1_img_f;
-            ab_4g8_img = ab_4g8_img_f;
         end
-
         
         %% Normalise images
         normalise_imgs = 0;
@@ -223,49 +233,51 @@ function [] = analyse_data_IF(files,close_figs)
         end
         
         %% Smooth images + subtract background
-%         subtract_bkg = 1;
-%         spatial_avg = 1;
-%         
-%         if spatial_avg
-% %             k3 = 9;
-% %             box_kernel = ones(k3,k3)*1/(k3*k3);
-%             
-% %             dapi_img_f = imfilter(dapi_img,box_kernel,'replicate');
-%             iba1_img_f = imfilter(iba1_img,box_kernel,'replicate');
-%             ab_4g8_img_f = imfilter(ab_4g8_img,box_kernel,'replicate');
-%             
-%             if subtract_bkg
-%                 se2 = strel('disk',100);
-% 
-%                 iba1_img_f = imsubtract(iba1_img_f,imopen(iba1_img_f,se2));
-%                 ab_4g8_img_f = imsubtract(ab_4g8_img_f,imopen(ab_4g8_img_f,se2));
-%             end
-%             
-%             fig1 = figure('units','normalized','outerposition',[0 0 1 1]);
-%             subplot(211),imshow(iba1_img),colormap(r_colormap),title('Original')
-%             subplot(212),imshow(iba1_img_f),colormap(r_colormap),title('Filtered')
-% 
-%             fig2 = figure('units','normalized','outerposition',[0 0 1 1]);
-%             subplot(211),imshow(ab_4g8_img),colormap(g_colormap),title('Original')
-%             subplot(212),imshow(ab_4g8_img_f),colormap(g_colormap),title('Filtered')
-% 
-%             fname1 = strcat(fname,'_2_iba1_filtered.tif');
-%             saveas(fig1,fullfile(results_folder,fname1));
-%             if close_figs
-%                 close(fig1);
-%             end
-% 
-%             fname2 = strcat(fname,'_5_4g8_filtered.tif');
-%             saveas(fig2,fullfile(results_folder,fname2));
-%             if close_figs
-%                 close(fig2);
-%             end
-% % 
-% %             dapi_img = dapi_img_f;
-%             iba1_img = iba1_img_f;
-%             ab_4g8_img = ab_4g8_img_f;
-%         end
+        if ~smooth_ref
+            subtract_bkg = 1;
+            spatial_avg = 1;
 
+            if spatial_avg
+    %             k3 = 9;
+    %             box_kernel = ones(k3,k3)*1/(k3*k3);
+
+    %             dapi_img_f = imfilter(dapi_img,box_kernel,'replicate');
+                iba1_img_f = imfilter(iba1_img,box_kernel,'replicate');
+                ab_4g8_img_f = imfilter(ab_4g8_img,box_kernel,'replicate');
+
+                if subtract_bkg
+                    se2 = strel('disk',100);
+
+                    iba1_img_f = imsubtract(iba1_img_f,imopen(iba1_img_f,se2));
+                    ab_4g8_img_f = imsubtract(ab_4g8_img_f,imopen(ab_4g8_img_f,se2));
+                end
+
+                fig1 = figure('units','normalized','outerposition',[0 0 1 1]);
+                subplot(211),imshow(iba1_img),colormap(r_colormap),title('Original')
+                subplot(212),imshow(iba1_img_f),colormap(r_colormap),title('Filtered')
+
+                fig2 = figure('units','normalized','outerposition',[0 0 1 1]);
+                subplot(211),imshow(ab_4g8_img),colormap(g_colormap),title('Original')
+                subplot(212),imshow(ab_4g8_img_f),colormap(g_colormap),title('Filtered')
+
+                fname1 = strcat(fname,'_2_iba1_filtered.tif');
+                saveas(fig1,fullfile(results_folder,fname1));
+                if close_figs
+                    close(fig1);
+                end
+
+                fname2 = strcat(fname,'_5_4g8_filtered.tif');
+                saveas(fig2,fullfile(results_folder,fname2));
+                if close_figs
+                    close(fig2);
+                end
+    % 
+    %             dapi_img = dapi_img_f;
+                iba1_img = iba1_img_f;
+                ab_4g8_img = ab_4g8_img_f;
+            end
+        end
+        
         %% Create microglia and ab masks
         if normalise_imgs
             iba1_thresh = 0.9*255;
@@ -275,10 +287,25 @@ function [] = analyse_data_IF(files,close_figs)
             ab_mask = ab_4g8_img>ab_4g8_thresh;
             
         elseif normalise_brightness
-            iba1_thresh = 0.6; % 0.4 if normalisation before smooth
-            microglia_mask = imbinarize(iba1_img,iba1_thresh);
+            if smooth_ref
+                if contains(file,'CA1') % less sensitive to exclude WM
+                    iba1_thresh = 0.6; % 0.6
+                    ab_4g8_thresh = 0.5; % 0.5
+                else
+                    iba1_thresh = 0.5;
+                    ab_4g8_thresh = 0.4;
+                end
+            else
+                if contains(file,'CA1')
+                    iba1_thresh = 0.4;
+                    ab_4g8_thresh = 0.5;
+                else
+                    iba1_thresh = 0.4;
+                    ab_4g8_thresh = 0.2;
+                end
+            end
             
-            ab_4g8_thresh = 0.55; % 0.3 if normalisation before smooth
+            microglia_mask = imbinarize(iba1_img,iba1_thresh);
             ab_mask = imbinarize(ab_4g8_img,ab_4g8_thresh);
             
         else % variable threshold
@@ -376,7 +403,8 @@ function [] = analyse_data_IF(files,close_figs)
         max_dist_um = 50;
         max_dist = round(max_dist_um/pixel_size);
         
-        colocalisation_count = 0;
+        ab_c_count = 0;
+        microglia_c_count = 0;
 
         fig8 = figure;
         imshow(composite_img); hold on
@@ -400,7 +428,8 @@ function [] = analyse_data_IF(files,close_figs)
                     set(h_microglia,'EdgeColor','r','LineWidth',1);
                 end
                 
-                colocalisation_count = colocalisation_count+1;
+                ab_c_count = ab_c_count+1;
+                microglia_c_count = microglia_c_count+length(microglia_idxs);
             end
            
         end
@@ -413,11 +442,11 @@ function [] = analyse_data_IF(files,close_figs)
 
         
         %% Compute % of colocalisation: count
-        microglia_ab_ratio = round((colocalisation_count/microglia_no)*100,2);
-        ab_microglia_ratio = round((colocalisation_count/ab_no)*100,2);
+        microglia_ab_ratio = round((microglia_c_count/microglia_no)*100,2);
+        ab_microglia_ratio = round((ab_c_count/ab_no)*100,2);
         
         fprintf('*** %s file ***\n',file)
-        fprintf('Colocalisation count = %d\n', colocalisation_count);
+        fprintf('Colocalisation ab count = %d; microglia count = %d\n', ab_c_count,microglia_c_count);
         fprintf('Microglia no = %d. Microglia ab+ = %1.2f%%\n',microglia_no,microglia_ab_ratio);
         fprintf('Ab no = %d. Ab microglia+ = %1.2f%%\n',ab_no,ab_microglia_ratio);
         
@@ -428,10 +457,10 @@ function [] = analyse_data_IF(files,close_figs)
         %% Compute % of colocalisation: density (simplest approach)
         microglia_area = sum(microglia_mask,[1,2]);
         ab_area = sum(ab_mask,[1,2]);
-        microglia_ab_pos_area = sum(colocalised_mask,[1,2]);
+        colocalised_area = sum(colocalised_mask,[1,2]);
         
-        microglia_ab_area_ratio = round((microglia_ab_pos_area/microglia_area)*100,2);
-        ab_microglia_area_ratio = round((ab_area/microglia_area)*100,2);
+        microglia_ab_area_ratio = round((colocalised_area/microglia_area)*100,2);
+        ab_microglia_area_ratio = round((colocalised_area/ab_area)*100,2);
         fprintf('Microglia ab+ area = %1.2f%%\n',microglia_ab_area_ratio);
         fprintf('Ab microglia+ area = %1.2f%%\n',ab_microglia_area_ratio);
 
@@ -442,11 +471,14 @@ function [] = analyse_data_IF(files,close_figs)
         results.total_area = img_size(1)*img_size(2);
         
         results.microglia_no = microglia_no;
+        results.microglia_c_count = microglia_c_count;
         results.microglia_ab_ratio = microglia_ab_ratio;
         results.microglia_area = microglia_area;
+        results.colocalised_area = colocalised_area;
         results.microglia_ab_area_ratio = microglia_ab_area_ratio;
         
         results.ab_no = ab_no;
+        results.ab_c_count = ab_c_count;
         results.ab_microglia_ratio = ab_microglia_ratio;
         results.ab_area = ab_area;
         results.ab_microglia_area_ratio = ab_microglia_area_ratio;
