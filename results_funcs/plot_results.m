@@ -49,6 +49,9 @@ function [results_all] = plot_results(quantity_to_plot,quantity_name,...
     elseif strcmp(quantity_name,'ab_ratio') || strcmp(quantity_name,'ab_area_ratio')
         ylabel_ = '% of microglia+ Aβ';
         y_round = 10;
+    elseif strcmp(quantity_name,'microglia_per_ab')
+        ylabel_ = 'Microglia no per Aβ';
+        y_round = 1;
     end
     
     %%

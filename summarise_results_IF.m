@@ -211,7 +211,12 @@ function [] = summarise_results_IF(base_folder,cohort_case,close_figs)
     results_ratio_2_area_all = plot_results(roi_ab_microglia_area_ratio,'ab_area_ratio',...
         mouse_cond_idxs,img_type,cohort_results_folder);
     
+    %% Results summary: number of microglia per ab    
+    results_microglia_per_ab_all = plot_results(roi_microglia_per_ab_count,'microglia_per_ab',...
+        mouse_cond_idxs,img_type,cohort_results_folder);
+    
     %% Statistics
+    % count
     [p_ratio_1,h_ratio_1] = compute_stats(results_ratio_1_all,'microglia_ratio',...
                             img_type,stats_folder);
                         
@@ -224,7 +229,12 @@ function [] = summarise_results_IF(base_folder,cohort_case,close_figs)
                         
     [p_ratio_2_area,h_ratio_2_area] = compute_stats(results_ratio_2_area_all,'ab_area_ratio',...
                             img_type,stats_folder);
-     
+                      
+                        
+    % microglia per ab
+    [p_ratio_3,h_ratio_3] = compute_stats(results_microglia_per_ab_all,'microglia_per_ab',...
+                            img_type,stats_folder);
+
     %% Plot result images for comparison
     max_n = 7;
     
@@ -237,6 +247,12 @@ function [] = summarise_results_IF(base_folder,cohort_case,close_figs)
         roi_results_ratio_2 = results_ratio_2_all{roi_idx};
         roi_results_ratio_1_area = results_ratio_1_area_all{roi_idx};
         roi_results_ratio_2_area = results_ratio_2_area_all{roi_idx};
+        
+        comparison_subfolder = fullfile(comparison_folder,roi_fname);
+        if ~exist(comparison_subfolder,'dir')
+            mkdir(comparison_subfolder);
+        end
+
 
         
 %         if isempty(results_count_all)
@@ -247,8 +263,13 @@ function [] = summarise_results_IF(base_folder,cohort_case,close_figs)
         
  
         for j = 1:cond_no
-            fig1 = figure('units','normalized','outerposition',[0 0 1 1]);
-            fig2 = figure('units','normalized','outerposition',[0 0 1 1]);
+%             fig1 = figure('units','normalized','outerposition',[0 0 1 1]);
+%             fig2 = figure('units','normalized','outerposition',[0 0 1 1]);
+
+%             comparison_subfolder = fullfile(comparison_folder,cond_names{j});
+%             if ~exist(comparison_subfolder,'dir')
+%                 mkdir(comparison_subfolder);
+%             end
 
             cond_j_names = condition_mouse_names{j};
             cond_img_idxs = img_idxs((contains({roi_img_files(img_idxs).name}',cond_j_names)));
@@ -272,37 +293,53 @@ function [] = summarise_results_IF(base_folder,cohort_case,close_figs)
             for i = 1:length(cond_img_idxs)
                 
                 % composite mask + cells detected
+                fig1 = figure('units','normalized','outerposition',[0 0 1 1]);
                 roi_count_img = imread(fullfile(roi_count_imgs(cond_img_idxs(i)).folder,roi_count_imgs(cond_img_idxs(i)).name));                
                 set(0,'CurrentFigure',fig1)
-                subplot(round(max_n/2),2,i),
+%                 subplot(round(max_n/2),2,i),
                 imshow(roi_count_img)
-                title_txt = {roi_count_imgs(cond_img_idxs(i)).name,...
-                    sprintf('Microglia ab+ = %1.2f%%. Ab microglia+ = %1.2f%%\n',roi_results_ratio_1_j(i),roi_results_ratio_2_j(i))};
+%                 title_txt = {roi_count_imgs(cond_img_idxs(i)).name,...
+%                     sprintf('Microglia ab+ = %1.2f%%. Ab microglia+ = %1.2f%%\n',roi_results_ratio_1_j(i),roi_results_ratio_2_j(i))};
+                title_txt = sprintf('Microglia ab+ = %1.2f%%. Ab microglia+ = %1.2f%%',roi_results_ratio_1_j(i),roi_results_ratio_2_j(i));
                 title(title_txt,'Interpreter','none')
             
+                
                 % composite mask + overlap
+                fig2 = figure('units','normalized','outerposition',[0 0 1 1]);
                 roi_area_img = imread(fullfile(roi_area_imgs(cond_img_idxs(i)).folder,roi_area_imgs(cond_img_idxs(i)).name));
                 set(0,'CurrentFigure',fig2)
-                subplot(round(max_n/2),2,i),
+%                 subplot(round(max_n/2),2,i),
                 imshow(roi_area_img)
-                title_txt = {roi_area_imgs(cond_img_idxs(i)).name,...
-                    sprintf('Microglia ab+ area = %1.2f%%. Ab microglia+ area = %1.2f%%\n',roi_results_ratio_1_area_j(i),roi_results_ratio_2_area_j(i))};
+%                 title_txt = {roi_area_imgs(cond_img_idxs(i)).name,...
+%                     sprintf('Microglia ab+ area = %1.2f%%. Ab microglia+ area = %1.2f%%\n',roi_results_ratio_1_area_j(i),roi_results_ratio_2_area_j(i))};
+                title_txt = sprintf('Microglia ab+ area = %1.2f%%. Ab microglia+ area = %1.2f%%',roi_results_ratio_1_area_j(i),roi_results_ratio_2_area_j(i));
                 title(title_txt,'Interpreter','none')
 
-            end
-            
-            
-            fig_1_name = sprintf('roi_images_%s_%d_%s_%d_%s_colocalised_count.tif',img_type,roi_idx,roi_fnames{roi_idx},j,cond_names{j});
-            saveas(fig1,fullfile(comparison_folder,fig_1_name));
+                
+                fig_1_name = sprintf('%s_%d_%s.tif',roi_count_imgs(cond_img_idxs(i)).name(1:end-4),j,cond_names{j});
+                saveas(fig1,fullfile(comparison_subfolder,fig_1_name));
 
-            fig_2_name = sprintf('roi_images_%s_%d_%s_%d_%s_colocalised_area.tif',img_type,roi_idx,roi_fnames{roi_idx},j,cond_names{j});
-            saveas(fig2,fullfile(comparison_folder,fig_2_name));
+                fig_2_name = sprintf('%s_%d_%s.tif',roi_area_imgs(cond_img_idxs(i)).name(1:end-4),j,cond_names{j});
+                saveas(fig2,fullfile(comparison_subfolder,fig_2_name));
             
-            
-            if close_figs
-                close(fig1);
-                close(fig2);
+                if close_figs
+                    close(fig1);
+                    close(fig2);
+                end
             end
+            
+            
+%             fig_1_name = sprintf('roi_images_%s_%d_%s_%d_%s_colocalised_count.tif',img_type,roi_idx,roi_fnames{roi_idx},j,cond_names{j});
+%             saveas(fig1,fullfile(comparison_folder,fig_1_name));
+% 
+%             fig_2_name = sprintf('roi_images_%s_%d_%s_%d_%s_colocalised_area.tif',img_type,roi_idx,roi_fnames{roi_idx},j,cond_names{j});
+%             saveas(fig2,fullfile(comparison_folder,fig_2_name));
+%             
+%             
+%             if close_figs
+%                 close(fig1);
+%                 close(fig2);
+%             end
 
         end
         
