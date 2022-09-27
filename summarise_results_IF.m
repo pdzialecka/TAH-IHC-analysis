@@ -246,7 +246,7 @@ function [] = summarise_results_IF(base_folder,cohort_case,close_figs)
 %         end
         
  
-        for j = 1%:cond_no
+        for j = 1:cond_no
             fig1 = figure('units','normalized','outerposition',[0 0 1 1]);
             fig2 = figure('units','normalized','outerposition',[0 0 1 1]);
 
@@ -300,8 +300,8 @@ function [] = summarise_results_IF(base_folder,cohort_case,close_figs)
             
             
             if close_figs
-%                 close(fig1);
-%                 close(fig2);
+                close(fig1);
+                close(fig2);
             end
 
         end
