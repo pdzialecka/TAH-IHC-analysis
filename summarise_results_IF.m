@@ -100,6 +100,8 @@ function [] = summarise_results_IF(base_folder,cohort_case,close_figs)
     roi_img_files = [];
 %     roi_img_norm_files = [];
     roi_mask_files = [];
+    roi_count_imgs = [];
+    roi_area_imgs = [];
 
     for i = 1:length(data_folders)
         data_folder = fullfile(data_folders(i).folder,data_folders(i).name);
@@ -119,6 +121,13 @@ function [] = summarise_results_IF(base_folder,cohort_case,close_figs)
             idx_3_files = dir(fullfile(data_folder,'IF','Results',m_names{j},strcat('*masks.mat')));
             roi_mask_files = [roi_mask_files; idx_3_files];
             
+            idx_4_files = dir(fullfile(data_folder,'IF','Results',m_names{j},strcat('*colocalised_count.tif')));
+            roi_count_imgs = [roi_count_imgs; idx_4_files];
+            
+            idx_5_files = dir(fullfile(data_folder,'IF','Results',m_names{j},strcat('*colocalised_area.tif')));
+            roi_area_imgs = [roi_area_imgs; idx_5_files];
+
+
         end
 
         % faster but wrong order
@@ -131,11 +140,16 @@ function [] = summarise_results_IF(base_folder,cohort_case,close_figs)
     [~,s_idxs2] = sort({roi_img_files.name});
 %     [~,s_idxs4] = sort({roi_img_norm_files.name});
     [~,s_idxs3] = sort({roi_mask_files.name});
+    [~,s_idxs4] = sort({roi_count_imgs.name});
+    [~,s_idxs5] = sort({roi_area_imgs.name});
+
 
     result_files = result_files(s_idxs1);
     roi_img_files = roi_img_files(s_idxs2);
 %     roi_img_norm_files = roi_img_norm_files(s_idxs4);
     roi_mask_files = roi_mask_files(s_idxs3);
+    roi_count_imgs = roi_count_imgs(s_idxs4);
+    roi_area_imgs = roi_area_imgs(s_idxs5);
 
 %     {result_files.name}'
 %     {roi_img_files.name}'
@@ -156,7 +170,8 @@ function [] = summarise_results_IF(base_folder,cohort_case,close_figs)
     roi_microglia_ab_area_ratio = nan(roi_no,mouse_no);
     roi_ab_microglia_area_ratio = nan(roi_no,mouse_no);
 
-
+    roi_microglia_per_ab_count = {};
+    
     for roi_idx = 1:roi_no
         roi_fname = roi_fnames{roi_idx};
         file_idxs = find(contains({result_files.name}',roi_fname));
@@ -169,6 +184,9 @@ function [] = summarise_results_IF(base_folder,cohort_case,close_figs)
             % count ratio
             roi_microglia_ab_ratio(roi_idx,i) = results{roi_idx,i}.microglia_ab_ratio;
             roi_ab_microglia_ratio(roi_idx,i) = results{roi_idx,i}.ab_microglia_ratio;
+            
+            % microglia per ab count
+            roi_microglia_per_ab_count{roi_idx,i} = results{roi_idx,i}.microglia_per_ab_count;
             
             % area ratio
             roi_microglia_ab_area_ratio(roi_idx,i) = results{roi_idx,i}.microglia_ab_area_ratio;
@@ -207,73 +225,87 @@ function [] = summarise_results_IF(base_folder,cohort_case,close_figs)
     [p_ratio_2_area,h_ratio_2_area] = compute_stats(results_ratio_2_area_all,'ab_area_ratio',...
                             img_type,stats_folder);
      
-    %% Plot DAB images for comparison
-%     for roi_idx = roi_idxs
-%         
-%         roi_fname = roi_fnames{roi_idx};
-%         img_idxs = find(contains({roi_img_files.name}',roi_fname));
-%         
-%         roi_results_ratio = results_ratio_all{roi_idx};
+    %% Plot result images for comparison
+    max_n = 7;
+    
+    for roi_idx = 1%:roi_no
+        
+        roi_fname = roi_fnames{roi_idx};
+        img_idxs = find(contains({roi_img_files.name}',roi_fname));
+        
+        roi_results_ratio_1 = results_ratio_1_all{roi_idx};
+        roi_results_ratio_2 = results_ratio_2_all{roi_idx};
+        roi_results_ratio_1_area = results_ratio_1_area_all{roi_idx};
+        roi_results_ratio_2_area = results_ratio_2_area_all{roi_idx};
+
+        
 %         if isempty(results_count_all)
 %             roi_results_count = nan(size(roi_results_ratio));
 %         else
 %             roi_results_count = results_count_all{roi_idx};
 %         end
-%         
-%  
-%         for j = 1:cond_no
-%             fig1 = figure('units','normalized','outerposition',[0 0 1 1]);
-%             fig2 = figure('units','normalized','outerposition',[0 0 1 1]);
-% 
-%             cond_j_names = condition_mouse_names{j};
-%             cond_img_idxs = img_idxs((contains({roi_img_files(img_idxs).name}',cond_j_names)));
-% %             {roi_img_files(cond_img_idxs).name}'
-% 
-%             % remove nan values
+        
+ 
+        for j = 1%:cond_no
+            fig1 = figure('units','normalized','outerposition',[0 0 1 1]);
+            fig2 = figure('units','normalized','outerposition',[0 0 1 1]);
+
+            cond_j_names = condition_mouse_names{j};
+            cond_img_idxs = img_idxs((contains({roi_img_files(img_idxs).name}',cond_j_names)));
+%             {roi_img_files(cond_img_idxs).name}'
+
+            % remove nan values
 %             roi_results_density_j = roi_results_ratio(:,j);
 %             roi_results_count_j = roi_results_count(:,j);
+            
+            roi_results_ratio_1_j = roi_results_ratio_1(:,j);
+            roi_results_ratio_2_j = roi_results_ratio_2(:,j);
+            roi_results_ratio_1_area_j = roi_results_ratio_1_area(:,j);
+            roi_results_ratio_2_area_j = roi_results_ratio_2_area(:,j);
+
 %             
 %             missing_idxs = isnan(roi_results_density_j);
 %             roi_results_density_j(missing_idxs) = [];
 %             roi_results_count_j(missing_idxs) = [];
-%         
-%             
-%             for i = 1:length(cond_img_idxs)
-%                 % dab images
-%                 [~,roi_img_dab] = load_deconvolved_images(fullfile(roi_img_files(cond_img_idxs(i)).folder,roi_img_files(cond_img_idxs(i)).name));
-%     %             roi_img = load(fullfile(roi_img_files(img_idxs(i)).folder,roi_img_files(img_idxs(i)).name)).roi_image;
-%                 set(0,'CurrentFigure',fig1)
-%                 subplot(round(max_n/2),2,i),imshow(roi_img_dab)
-%                 colormap(dab_colormap)
-%                 title(roi_img_files(cond_img_idxs(i)).name,'Interpreter','none')
-%                 
-%                 % dab images + antibody masks
-%                 dab_roi_mask = load(fullfile(roi_mask_files(cond_img_idxs(i)).folder,roi_mask_files(cond_img_idxs(i)).name)).dab_roi_mask;
-%                 roi_img_dab_mask = labeloverlay(roi_img_dab,dab_roi_mask,...
-%                     'Colormap',[0,0,1],'Transparency',0.2);
-%                 
-%                 set(0,'CurrentFigure',fig2)
-%                 subplot(round(max_n/2),2,i),imshow(roi_img_dab_mask)
-%                 title_txt = {roi_mask_files(cond_img_idxs(i)).name,...
-%                     sprintf('Cell count = %d; Density = %1.2f %%',roi_results_count_j(i),roi_results_density_j(i))};
-%                 title(title_txt,'Interpreter','none')
-%                 
-%             end
-%             
-%             fig_1_name = sprintf('roi_images_%s_%d_%s_%d_%s.tif',img_type,roi_idx,roi_fnames{roi_idx},j,cond_names{j});
-%             saveas(fig1,fullfile(comparison_folder,fig_1_name));
-%             
-%             fig_2_name = sprintf('roi_images_%s_%d_%s_%d_%s_masks.tif',img_type,roi_idx,roi_fnames{roi_idx},j,cond_names{j});
-%             saveas(fig2,fullfile(comparison_folder,fig_2_name));
-%            
-%             
-%             if close_figs
+        
+            
+            for i = 1:length(cond_img_idxs)
+                
+                % composite mask + cells detected
+                roi_count_img = imread(fullfile(roi_count_imgs(cond_img_idxs(i)).folder,roi_count_imgs(cond_img_idxs(i)).name));                
+                set(0,'CurrentFigure',fig1)
+                subplot(round(max_n/2),2,i),
+                imshow(roi_count_img)
+                title_txt = {roi_count_imgs(cond_img_idxs(i)).name,...
+                    sprintf('Microglia ab+ = %1.2f%%. Ab microglia+ = %1.2f%%\n',roi_results_ratio_1_j(i),roi_results_ratio_2_j(i))};
+                title(title_txt,'Interpreter','none')
+            
+                % composite mask + overlap
+                roi_area_img = imread(fullfile(roi_area_imgs(cond_img_idxs(i)).folder,roi_area_imgs(cond_img_idxs(i)).name));
+                set(0,'CurrentFigure',fig2)
+                subplot(round(max_n/2),2,i),
+                imshow(roi_area_img)
+                title_txt = {roi_area_imgs(cond_img_idxs(i)).name,...
+                    sprintf('Microglia ab+ area = %1.2f%%. Ab microglia+ area = %1.2f%%\n',roi_results_ratio_1_area_j(i),roi_results_ratio_2_area_j(i))};
+                title(title_txt,'Interpreter','none')
+
+            end
+            
+            
+            fig_1_name = sprintf('roi_images_%s_%d_%s_%d_%s_colocalised_count.tif',img_type,roi_idx,roi_fnames{roi_idx},j,cond_names{j});
+            saveas(fig1,fullfile(comparison_folder,fig_1_name));
+
+            fig_2_name = sprintf('roi_images_%s_%d_%s_%d_%s_colocalised_area.tif',img_type,roi_idx,roi_fnames{roi_idx},j,cond_names{j});
+            saveas(fig2,fullfile(comparison_folder,fig_2_name));
+            
+            
+            if close_figs
 %                 close(fig1);
 %                 close(fig2);
-%             end
-% 
-%         end
-%         
-%     end
+            end
+
+        end
+        
+    end
     
 end

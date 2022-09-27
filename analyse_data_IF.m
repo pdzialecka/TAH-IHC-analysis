@@ -113,6 +113,10 @@ function [] = analyse_data_IF(files,close_figs)
         imwrite(dapi_img,img_fname,'Compression','none','WriteMode','overwrite');
         imwrite(iba1_img,img_fname,'Compression','none','WriteMode','append');
         imwrite(ab_4g8_img,img_fname,'Compression','none','WriteMode','append');
+        
+        %% Store original images
+        iba1_img_orig = iba1_img;
+        ab_4g8_img_orig = ab_4g8_img;
 
         %% Smooth images + subtract background
         if smooth_ref
@@ -142,13 +146,13 @@ function [] = analyse_data_IF(files,close_figs)
                 subplot(211),imshow(ab_4g8_img),colormap(g_colormap),title('Original')
                 subplot(212),imshow(ab_4g8_img_f),colormap(g_colormap),title('Filtered')
 
-                fname1 = strcat(fname,'_2_iba1_filtered.tif');
+                fname1 = strcat(fname,'_1_iba1_filtered.tif');
                 saveas(fig1,fullfile(results_folder,fname1));
                 if close_figs
                     close(fig1);
                 end
 
-                fname2 = strcat(fname,'_5_4g8_filtered.tif');
+                fname2 = strcat(fname,'_4_4g8_filtered.tif');
                 saveas(fig2,fullfile(results_folder,fname2));
                 if close_figs
                     close(fig2);
@@ -215,13 +219,13 @@ function [] = analyse_data_IF(files,close_figs)
             subplot(211),imshow(ab_4g8_img),colormap(g_colormap),title('Original filtered')
             subplot(212),imshow(ab_4g8_img_n),colormap(g_colormap),title('Normalised')
             
-            fname3 = strcat(fname,'_1_iba1_bc.tif');
+            fname3 = strcat(fname,'_2_iba1_bc.tif');
             saveas(fig3,fullfile(results_folder,fname3));
             if close_figs
                 close(fig3);
             end
 
-            fname4 = strcat(fname,'_4_4g8_bc.tif');
+            fname4 = strcat(fname,'_5_4g8_bc.tif');
             saveas(fig4,fullfile(results_folder,fname4));
             if close_figs
                 close(fig4);
@@ -278,6 +282,20 @@ function [] = analyse_data_IF(files,close_figs)
             end
         end
         
+        %% Compare the original composite image with the filtered one 
+        composite_img_orig = imfuse(iba1_img_orig,ab_4g8_img_orig,'ColorChannels',[1 2 0]);
+        composite_img = imfuse(iba1_img,ab_4g8_img,'ColorChannels',[1 2 0]);
+       
+        fig7 = figure('units','normalized','outerposition',[0 0 1 1]);
+        subplot(211),imshow(composite_img_orig),title('Original composite image')
+        subplot(212),imshow(composite_img),title('Filtered composite image')
+        
+        fname7 = strcat(fname,'_7_composite_img.tif');
+        saveas(fig7,fullfile(results_folder,fname7));
+        if close_figs
+            close(fig7);
+        end
+
         %% Create microglia and ab masks
         if normalise_imgs
             iba1_thresh = 0.9*255;
@@ -366,22 +384,23 @@ function [] = analyse_data_IF(files,close_figs)
         microglia_mask = microglia_mask_f;
         ab_mask = ab_mask_f;
         
-        %% Create colocolised mask
+        %% Create colocolised mask (area)
         colocalised_mask = microglia_mask & ab_mask;
         
-        composite_img = imfuse(iba1_img,ab_4g8_img,'ColorChannels',[1 2 0]);
+%         composite_img = imfuse(iba1_img,ab_4g8_img,'ColorChannels',[1 2 0]);
         composite_image_mask = labeloverlay(composite_img,colocalised_mask,...
             'Colormap',[0,0,1],'Transparency',0.2);
        
-        fig7 = figure('units','normalized','outerposition',[0 0 1 1]);
-        subplot(211),imshow(composite_img),title('Composite image')
-        subplot(212),imshow(composite_image_mask),title('Composite image + overlap mask')
+        fig8 = figure('units','normalized','outerposition',[0 0 1 1]);
+%         subplot(211),imshow(composite_img),title('Composite image')
+%         subplot(212),
+        imshow(composite_image_mask)%,title('Composite image + overlap mask')
         
         
-        fname7 = strcat(fname,'_7_colocalised_mask.tif');
-        saveas(fig7,fullfile(results_folder,fname7));
+        fname8 = strcat(fname,'_8_colocalised_area.tif');
+        saveas(fig8,fullfile(results_folder,fname8));
         if close_figs
-            close(fig7);
+            close(fig8);
         end
         
         %% Count number of cells
@@ -404,9 +423,10 @@ function [] = analyse_data_IF(files,close_figs)
         max_dist = round(max_dist_um/pixel_size);
         
         ab_c_count = 0;
+        microglia_per_ab_count = zeros(1,ab_no);
         microglia_c_count = 0;
-
-        fig8 = figure;
+        
+        fig9 = figure;
         imshow(composite_img); hold on
 
         for i = 1:ab_no
@@ -428,16 +448,18 @@ function [] = analyse_data_IF(files,close_figs)
                     set(h_microglia,'EdgeColor','r','LineWidth',1);
                 end
                 
+                
+                microglia_per_ab_count(i) = length(microglia_idxs);
                 ab_c_count = ab_c_count+1;
                 microglia_c_count = microglia_c_count+length(microglia_idxs);
             end
            
         end
         
-        fname8 = strcat(fname,'_8_colocalised_count.tif');
-        saveas(fig8,fullfile(results_folder,fname8));
+        fname9 = strcat(fname,'_9_colocalised_count.tif');
+        saveas(fig9,fullfile(results_folder,fname9));
         if close_figs
-            close(fig8);
+            close(fig9);
         end
 
         
@@ -449,11 +471,7 @@ function [] = analyse_data_IF(files,close_figs)
         fprintf('Colocalisation ab count = %d; microglia count = %d\n', ab_c_count,microglia_c_count);
         fprintf('Microglia no = %d. Microglia ab+ = %1.2f%%\n',microglia_no,microglia_ab_ratio);
         fprintf('Ab no = %d. Ab microglia+ = %1.2f%%\n',ab_no,ab_microglia_ratio);
-        
-        %% Save masks
-        mask_name = strcat(fname,'_masks');
-        save(fullfile(results_folder,mask_name),'microglia_mask','ab_mask','colocalised_mask');
-        
+                
         %% Compute % of colocalisation: density (simplest approach)
         microglia_area = sum(microglia_mask,[1,2]);
         ab_area = sum(ab_mask,[1,2]);
@@ -463,7 +481,11 @@ function [] = analyse_data_IF(files,close_figs)
         ab_microglia_area_ratio = round((colocalised_area/ab_area)*100,2);
         fprintf('Microglia ab+ area = %1.2f%%\n',microglia_ab_area_ratio);
         fprintf('Ab microglia+ area = %1.2f%%\n',ab_microglia_area_ratio);
-
+        
+        %% Save masks
+        mask_name = strcat(fname,'_masks');
+        save(fullfile(results_folder,mask_name),'microglia_mask','ab_mask','colocalised_mask');
+        
         %% Save results
         results = [];
         results.orig_img_size = orig_img_size;
@@ -479,10 +501,11 @@ function [] = analyse_data_IF(files,close_figs)
         
         results.ab_no = ab_no;
         results.ab_c_count = ab_c_count;
+        results.microglia_per_ab_count = microglia_per_ab_count;
         results.ab_microglia_ratio = ab_microglia_ratio;
         results.ab_area = ab_area;
         results.ab_microglia_area_ratio = ab_microglia_area_ratio;
-           
+        
         fname_r = strcat(file(1:end-4),'_results.mat');
         save(fullfile(results_folder,fname_r),'results');
         fprintf('Results %s saved\n',fname_r);
