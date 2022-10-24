@@ -93,7 +93,7 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
     gamma_names = mouse_names(mouse_cond_idxs==2)';
     theta_names = mouse_names(mouse_cond_idxs==3)';
     ltd_names = mouse_names(mouse_cond_idxs==4)';
-    condition_mouse_names = {sham_names,gamma_names,theta_names,ltd_names};
+    condition_mouse_names = {sham_names,ltd_names,theta_names,gamma_names}; % {sham_names,gamma_names,theta_names,ltd_names};
 
     %% Find result files
     result_files = [];
@@ -170,9 +170,9 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
 %     condition_mouse_names = {sham_names,gamma_names,theta_names,ltd_names};
 
     %% Conditions
-    cond_names = {'Sham','40 Hz','8 Hz','LTD'};
+    cond_names = {'Sham','LTD','8 Hz','40 Hz'};
     cond_no = length(cond_names);
-    variable_names_t = {'Sham','Gamma (40 Hz)','Theta (8 Hz)','LTD (1 Hz)'};
+%     variable_names_t = {'Sham','Gamma (40 Hz)','Theta (8 Hz)','LTD (1 Hz)'};
     max_n = 7;
 
     [roi_names,roi_fnames,roi_no] = get_roi_list();

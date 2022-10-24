@@ -9,8 +9,11 @@ function [results_all] = plot_results(quantity_to_plot,quantity_name,...
     else
         [roi_names,roi_fnames,roi_no] = get_roi_list();
     end
-    cond_names = {'Sham','40 Hz','8 Hz','LTD'};
+    
+%     cond_names = {'Sham','LTD','8 Hz','40 Hz'};
+    cond_names = {'Sham','LTD','Theta','Gamma'};
     close_figs = 1;
+    fontsize = 20;
     
     %%
     if ~exist('roi_idxs','var')
@@ -31,7 +34,7 @@ function [results_all] = plot_results(quantity_to_plot,quantity_name,...
     % IHC
     if strcmp(quantity_name,'density')
         ylabel_ = 'Area covered (%)';
-        y_round = 0.25;
+        y_round = 0.5;
     elseif strcmp(quantity_name,'count')
         ylabel_ = 'Cell count';
         y_round = 10;
@@ -112,9 +115,9 @@ function [results_all] = plot_results(quantity_to_plot,quantity_name,...
         if iscell(quantity_to_plot)
             roi_results_ = {};
             roi_results_{1} = [sham_results{roi_idx,:}]*2;
-            roi_results_{2} = [gamma_results{roi_idx,:}]*2;
+            roi_results_{4} = [gamma_results{roi_idx,:}]*2;
             roi_results_{3} = [theta_results{roi_idx,:}]*2;
-            roi_results_{4} = [ltd_results{roi_idx,:}]*2;
+            roi_results_{2} = [ltd_results{roi_idx,:}]*2;
 
             max_n = max(cellfun(@length,roi_results_));
             roi_results = nan(max_n,4);
@@ -126,9 +129,9 @@ function [results_all] = plot_results(quantity_to_plot,quantity_name,...
         else
             roi_results = nan(max_n,4);
             roi_results(1:sham_n,1) = sham_results(roi_idx,:);
-            roi_results(1:gamma_n,2) = gamma_results(roi_idx,:);
+            roi_results(1:gamma_n,4) = gamma_results(roi_idx,:);
             roi_results(1:theta_n,3) = theta_results(roi_idx,:);
-            roi_results(1:ltd_n,4) = ltd_results(roi_idx,:);
+            roi_results(1:ltd_n,2) = ltd_results(roi_idx,:);
         end
         
         
@@ -161,12 +164,14 @@ function [results_all] = plot_results(quantity_to_plot,quantity_name,...
 
         title(roi_names{roi_idx});
         ylabel(ylabel_); ylim(ylims_)
-        set(gca,'box','off','Fontsize',15)
+        set(gca,'box','off','Fontsize',fontsize)
 
         
         if save_results
-            fig_name = sprintf('%s_%s_%d_roi_%s.tif',img_type,quantity_name,roi_idx,roi_fnames{roi_idx});
-            saveas(gcf,fullfile(results_folder,fig_name));
+            fig_name = sprintf('%s_%s_%d_roi_%s',img_type,quantity_name,roi_idx,roi_fnames{roi_idx});
+            saveas(gcf,fullfile(results_folder,strcat(fig_name,'.tif')));
+            saveas(gcf,fullfile(results_folder,strcat(fig_name,'.fig')));
+
             if close_figs; close(gcf); end
 
             file_name = sprintf('%s_%s_%d_roi_%s_results',img_type,quantity_name,roi_idx,roi_fnames{roi_idx});
