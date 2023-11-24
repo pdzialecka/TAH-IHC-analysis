@@ -23,12 +23,12 @@ function [t_results,t_stats] = extract_results(result_files,stats_files,result_t
 
         t_stats = readtable(fullfile(stats_file_(1).folder,stats_file_(1).name),...
                 'VariableNamingRule','preserve');
-            
-        % add a matrix with significance test
-        h_matrix = t_stats{1:end,2:end}<0.05;
-        h_table = array2table(uint16(h_matrix),'VariableNames',var_names_h);
         
-        t_stats = [t_stats, h_table];
+        % add a matrix with significance test
+%         h_matrix = t_stats{1:end,2:end}<0.05;
+%         h_table = array2table(uint16(h_matrix),'VariableNames',var_names_h);
+%         
+%         t_stats = [t_stats, h_table];
         
     end
     

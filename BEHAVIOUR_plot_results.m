@@ -6,8 +6,13 @@
 % For full behavioural analysis, check Behaviour analysis functions
 
 %%
-close all
-clear all
+clc;
+close all;
+clear all;
+
+%% Analysis folder
+analysis_folder = 'C:\Users\Pat\OneDrive - Imperial College London\AD_TI_hipp\Analysis\IHC';
+addpath(genpath(analysis_folder));
 
 %% Define root folders
 root_data_folder = 'D:\TAH\Behaviour_results\from_Maria\Results\';

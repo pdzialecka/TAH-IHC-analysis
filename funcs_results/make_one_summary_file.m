@@ -17,7 +17,7 @@ function [] = make_one_summary_file(summary_folder)
 %         empty_table = cell2table({'' '' '' '';'' '' '' ''; '' '' '' ''},'VariableNames',cond_names);
 %         gap_row_table = array2table(nan(3,4),'VariableNames',cond_names);
 
-    
+    %%
     for img_type_idx = 1:length(all_img_types)
         img_type = all_img_types{img_type_idx};
         

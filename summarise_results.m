@@ -289,6 +289,7 @@ function [] = summarise_results(base_folder,cohort_case,img_type,...
     end
     
     %% Plot DAB images for comparison
+    if 0
     [~,~,~,~,correct_brightness] = get_antibody_threshold(img_type);
     
     for roi_idx = roi_idxs
@@ -377,5 +378,5 @@ function [] = summarise_results(base_folder,cohort_case,img_type,...
         end
         
     end
-    
+    end
 end

@@ -16,9 +16,9 @@ base_folder = 'D:\TAH';
 %% Analysis steps
 deconvolve = 0;
 select_rois = 0;
-create_mask = 1;
-analyse = 1;
-analyse_all = 1;
+create_mask = 0;
+analyse = 0;
+analyse_all = 0;
 summarise = 1;
 summarise_tables = 1;
 
@@ -135,6 +135,6 @@ end
 
 %% Create one summary table
 if summarise_tables
-    results_folder = fullfile(base_folder,'IHC_results');
-    make_one_summary_file(results_folder);
+    summary_folder = fullfile(base_folder,'IHC_results');
+    make_one_summary_file(summary_folder);
 end
