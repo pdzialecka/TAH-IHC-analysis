@@ -1,8 +1,13 @@
-function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
+function [] = summarise_results(base_folder,cohort_case,img_type,...
+                                mice_to_exclude,close_figs)
     %% Create summary plot of results per image type
 	% @author: pdzialecka
 
     %%
+    if ~exist('mice_to_exclude','var')
+        mice_to_exclude = {};
+    end
+
     if ~exist('close_figs','var')
         close_figs = 1;
     end
@@ -18,7 +23,7 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
     if cohort_case == 1
         cohort_idxs = [1];
     elseif cohort_case == 2
-        cohort_idxs = [2,3,4,5];
+        cohort_idxs = [2,3,4,5,6];
     end
     
     all_cohort_folders = dir(fullfile(base_folder,'Data','Cohort*'));
@@ -46,7 +51,7 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
         cohort_results_folder = fullfile(results_folder,'Cohorts_1_13mo');
 
     elseif cohort_case == 2
-        cohort_results_folder = fullfile(results_folder,'Cohorts_2-5_6mo');
+        cohort_results_folder = fullfile(results_folder,'Cohorts_2-6_6mo');
     end
     
     % add image_type subfolder
@@ -93,7 +98,7 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
     gamma_names = mouse_names(mouse_cond_idxs==2)';
     theta_names = mouse_names(mouse_cond_idxs==3)';
     ltd_names = mouse_names(mouse_cond_idxs==4)';
-    condition_mouse_names = {sham_names,ltd_names,theta_names,gamma_names}; % {sham_names,gamma_names,theta_names,ltd_names};
+    condition_mouse_names = {sham_names,ltd_names,theta_names,gamma_names};
 
     %% Find result files
     result_files = [];
@@ -170,7 +175,7 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
 %     condition_mouse_names = {sham_names,gamma_names,theta_names,ltd_names};
 
     %% Conditions
-    cond_names = {'Sham','LTD','8 Hz','40 Hz'};
+    cond_names = {'Sham','Delta','Theta','Gamma'};
     cond_no = length(cond_names);
 %     variable_names_t = {'Sham','Gamma (40 Hz)','Theta (8 Hz)','LTD (1 Hz)'};
     max_n = 7;
@@ -182,7 +187,7 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
     if strcmp(img_type,'ki67') || strcmp(img_type,'dcx') || strcmp(img_type,'sox2')
         roi_idxs = [1:2]; % DG only. keep cortex too?
     end
-    
+        
     %% Results to summarise
     if strcmp(img_type,'dcx')
         check_count = 0;
@@ -202,17 +207,18 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
         check_size = 0;
     end
     
-
     %% Load results
     results = {};
     roi_density = nan(roi_no,mouse_no);
     roi_count = nan(roi_no,mouse_no);
     roi_cfos_ratio = nan(roi_no,mouse_no);
     roi_size = cell(roi_no,mouse_no);
+    roi_size(:) = {NaN};
 
     for roi_idx = roi_idxs % 1:roi_no
         roi_fname = roi_fnames{roi_idx};
         file_idxs = find(contains({result_files.name}',roi_fname));
+%         file_idxs = find(contains({result_files.name}',roi_fname) & ~contains({result_files.name}',names_to_exclude));
 
         for i = 1:length(file_idxs)
             file_idx = file_idxs(i);
@@ -230,7 +236,17 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
             end
         end
     end
+    
+    %% Exclude mice
+    if ~isempty(mice_to_exclude)
+        exclude_idxs = find(contains(mouse_names,mice_to_exclude));
 
+        roi_density(:,exclude_idxs) = nan;
+        roi_count(:,exclude_idxs) = nan;
+        roi_cfos_ratio(:,exclude_idxs) = nan;
+        roi_size(:,exclude_idxs) = {nan};
+    end
+    
     %% Results summary: density
     results_density_all = plot_results(roi_density,'density',...
         mouse_cond_idxs,img_type,cohort_results_folder,roi_idxs,1);
@@ -297,7 +313,8 @@ function [] = summarise_results(base_folder,cohort_case,img_type,close_figs)
             end
             
             cond_j_names = condition_mouse_names{j};
-            cond_img_idxs = img_idxs((contains({roi_img_files(img_idxs).name}',cond_j_names)));
+%             cond_img_idxs = img_idxs((contains({roi_img_files(img_idxs).name}',cond_j_names)));
+            cond_img_idxs = img_idxs((contains({roi_img_files(img_idxs).name}',cond_j_names)) & ~contains({roi_img_files(img_idxs).name}',mice_to_exclude));
 %             {roi_img_files(cond_img_idxs).name}'
 
             % remove nan values

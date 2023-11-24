@@ -9,7 +9,7 @@ function [t_results,t_stats] = extract_results(result_files,stats_files,result_t
     t = {};
     t_results = [];
     t_stats = [];
-    var_names_h = {'Gamma vs Sham h','Theta vs Sham h','LTD vs Sham h'};
+    var_names_h = {'Delta vs Sham h','Theta vs Sham h','Gamma vs Sham h'};
 %     gap_row_table = array2table(nan(3,4),'VariableNames',cond_names);
 
     if ~isempty(result_files_)

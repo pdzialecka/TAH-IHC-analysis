@@ -11,23 +11,22 @@ analysis_folder = 'C:\Users\Pat\OneDrive - Imperial College London\AD_TI_hipp\An
 addpath(genpath(analysis_folder));
 
 %% Root data folder
-base_folder = 'C:\Users\Pat\Desktop\TAH';
-% base_folder = 'K:\TAH';
+base_folder = 'D:\TAH';
 
 %% Analysis steps
 deconvolve = 0;
 select_rois = 0;
-create_mask = 0;
-analyse = 0;
+create_mask = 1;
+analyse = 1;
 analyse_all = 1;
 summarise = 1;
-summarise_tables = 0;
+summarise_tables = 1;
 
 %% Analysis settings
 % magnification = 20;
 % roi_size_um = [500,500]; % 500 x 500 um
 all_img_types = {'moc23','12f4','ct695','iba1','gfap','cfos','ki67','dcx','sox2'};
-img_type = 'dcx'; % specific analysis
+img_type = 'moc23'; % specific analysis
 
 %% Cohort case
 cohort_case = 2; % 1 = 13mo (cohort 1), 2 = 6mo (cohorts 2-5)
@@ -38,7 +37,6 @@ if cohort_case == 1
 elseif cohort_case == 2
     cohort_folders = {'Cohort_2','Cohort_3','Cohort_4','Cohort_5'};
 end
-
 
 %% Within animal analysis inside cohort folders
 for cohort_idx = 1:length(cohort_folders)
@@ -71,7 +69,7 @@ for cohort_idx = 1:length(cohort_folders)
             
             for m_idx = 1:length(mouse_pfolders)
                 mouse_pfolder = fullfile(mouse_pfolders(m_idx).folder,mouse_pfolders(m_idx).name);
-                files = dir(fullfile(mouse_pfolder,'**',strcat('*deconv.tif')));
+                files = dir(fullfile(mouse_pfolder,strcat('*deconv.tif')));
                 
                 % rearrange files so moc23 is first
                 files = rearrange_files(files,all_img_types);
@@ -89,7 +87,7 @@ for cohort_idx = 1:length(cohort_folders)
         if create_mask
             
             % mask made of composite image
-            all_files = dir(fullfile(processed_folder,'**',strcat('*.tif')));
+            all_files = dir(fullfile(processed_folder,'*',strcat('*.tif')));
             keep_idxs = ~contains({all_files.name}','deconv');
             files = all_files(keep_idxs);
             
@@ -101,10 +99,10 @@ for cohort_idx = 1:length(cohort_folders)
             load_rois = 1;
 
             if analyse_all
-                files = dir(fullfile(processed_folder,'**',strcat('*deconv.tif')));
+                files = dir(fullfile(processed_folder,'*',strcat('*deconv.tif')));
 %                 files = dir(fullfile(roi_images_folder,'**','*.tif'));
             else
-                files = dir(fullfile(processed_folder,'**',strcat('*',img_type,'*deconv.tif')));
+                files = dir(fullfile(processed_folder,'*',strcat('*',img_type,'*deconv.tif')));
 %                 files = dir(fullfile(roi_images_folder,'**',strcat('*',image_type,'*.tif')));
             end
 
@@ -118,6 +116,8 @@ end
 
 
 %% Summarise results between animals within age groups
+mice_to_exclude = {'AD-Hipp41','AD-Hipp44','AD-Hipp45','AD-Hipp53'};
+
 if summarise
     results_folder = fullfile(base_folder,'IHC_results');
     save_cohort_info(results_folder);

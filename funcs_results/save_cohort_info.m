@@ -21,7 +21,7 @@ function [] = save_cohort_info(results_folder)
     cohort.mouse_conds = mouse_ids_to_conds(cohort.mouse_cond_idxs);
     save(fullfile(cohort_info_folder,'cohort_1_info.mat'),'cohort');
 
-    % cohorts 2
+    % cohort 2
     cohort = [];    
     cohort.cohort_id = 2;
     cohort.cohort_age = 6;
@@ -69,5 +69,17 @@ function [] = save_cohort_info(results_folder)
     cohort.mouse_cond_idxs = [1,3,4,1,4,1];
     cohort.mouse_conds = mouse_ids_to_conds(cohort.mouse_cond_idxs);
     save(fullfile(cohort_info_folder,'cohort_5_info.mat'),'cohort');
+    
+    % cohort 6
+    cohort = [];
+    cohort.cohort_id = 6;
+    cohort.cohort_age = 6;
+    cohort.conds = {'Sham','40 Hz','8 Hz','LTD'};
+    cohort.mouse_ids = [53,54,55,56,57];
+    cohort.mouse_names = mouse_ids_to_names(cohort.mouse_ids);
+    cohort.mouse_sex = {'F','F','F','F','F'};
+    cohort.mouse_cond_idxs = [3,3,3,4,2];
+    cohort.mouse_conds = mouse_ids_to_conds(cohort.mouse_cond_idxs);
+    save(fullfile(cohort_info_folder,'cohort_6_info.mat'),'cohort');
 
 end

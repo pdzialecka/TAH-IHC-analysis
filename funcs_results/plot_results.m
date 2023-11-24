@@ -10,8 +10,7 @@ function [results_all] = plot_results(quantity_to_plot,quantity_name,...
         [roi_names,roi_fnames,roi_no] = get_roi_list();
     end
     
-%     cond_names = {'Sham','LTD','8 Hz','40 Hz'};
-    cond_names = {'Sham','LTD','Theta','Gamma'};
+    cond_names = {'Sham','Delta','Theta','Gamma'}; % {'Sham','LTD','Theta','Gamma'};
     close_figs = 1;
     fontsize = 20;
     
@@ -55,6 +54,26 @@ function [results_all] = plot_results(quantity_to_plot,quantity_name,...
     elseif strcmp(quantity_name,'microglia_per_ab')
         ylabel_ = 'Microglia no per Aβ';
         y_round = 1;
+        
+    % Behaviour
+    elseif contains(quantity_name,'DI')
+        ylabel_ = 'DI'; % 'Discrimination index';
+        y_round = 1;
+        roi_names = {''};
+        roi_fnames = {''};
+    elseif contains(quantity_name,'Time')
+        ylabel_ = 'Exploration time (s)';
+        y_round = 10;
+        roi_names = {''};
+        roi_fnames = {''};
+    elseif contains(quantity_name,'index')
+        ylabel_ = strcat(quantity_name(1:3),' (%)');
+        y_round = 100;
+        if contains(quantity_name,'SAR')
+            y_round = 10;
+        end
+        roi_names = {''};
+        roi_fnames = {''};
     end
     
     %%
@@ -72,17 +91,17 @@ function [results_all] = plot_results(quantity_to_plot,quantity_name,...
     sham_results = quantity_to_plot(roi_idxs,mouse_cond_idxs==1);
     sham_n = size(sham_results,2);
 
-    % 40 Hz
-    gamma_results = quantity_to_plot(roi_idxs,mouse_cond_idxs==2);
-    gamma_n = size(gamma_results,2);
+    % LTD
+    ltd_results = quantity_to_plot(roi_idxs,mouse_cond_idxs==4);
+    ltd_n = size(ltd_results,2);
 
     % 8 Hz
     theta_results = quantity_to_plot(roi_idxs,mouse_cond_idxs==3);
     theta_n = size(theta_results,2);
-
-    % LTD
-    ltd_results = quantity_to_plot(roi_idxs,mouse_cond_idxs==4);
-    ltd_n = size(ltd_results,2);
+    
+    % 40 Hz
+    gamma_results = quantity_to_plot(roi_idxs,mouse_cond_idxs==2);
+    gamma_n = size(gamma_results,2);
 
 %     [nanmean(sham_density,2),nanmean(gamma_density,2),nanmean(theta_density,2),nanmean(ltd_density,2)]
 %     [nanstd(sham_density,'',2),nanstd(gamma_density,'',2),nanstd(theta_density,'',2),nanstd(ltd_density,'',2)]
@@ -114,10 +133,11 @@ function [results_all] = plot_results(quantity_to_plot,quantity_name,...
         
         if iscell(quantity_to_plot)
             roi_results_ = {};
-            roi_results_{1} = [sham_results{roi_idx,:}]*2;
-            roi_results_{4} = [gamma_results{roi_idx,:}]*2;
-            roi_results_{3} = [theta_results{roi_idx,:}]*2;
+            roi_results_{1} = [sham_results{roi_idx,:}]*2; % for diameter
             roi_results_{2} = [ltd_results{roi_idx,:}]*2;
+            roi_results_{3} = [theta_results{roi_idx,:}]*2;
+            roi_results_{4} = [gamma_results{roi_idx,:}]*2;
+
 
             max_n = max(cellfun(@length,roi_results_));
             roi_results = nan(max_n,4);
@@ -129,9 +149,9 @@ function [results_all] = plot_results(quantity_to_plot,quantity_name,...
         else
             roi_results = nan(max_n,4);
             roi_results(1:sham_n,1) = sham_results(roi_idx,:);
-            roi_results(1:gamma_n,4) = gamma_results(roi_idx,:);
-            roi_results(1:theta_n,3) = theta_results(roi_idx,:);
             roi_results(1:ltd_n,2) = ltd_results(roi_idx,:);
+            roi_results(1:theta_n,3) = theta_results(roi_idx,:);
+            roi_results(1:gamma_n,4) = gamma_results(roi_idx,:);
         end
         
         
@@ -154,27 +174,40 @@ function [results_all] = plot_results(quantity_to_plot,quantity_name,...
         b.BoxFaceColor = [0,0,0]; b.MarkerColor = [0,0,0];
         
         if max_n < 30
-            swarmchart(x,results_to_plot,'k','filled','MarkerFaceAlpha',0.8,'MarkerEdgeAlpha',0.8)
+            s = swarmchart(x,results_to_plot,'k','filled','MarkerFaceAlpha',0.8,'MarkerEdgeAlpha',0.8);
         else
-            swarmchart(x,results_to_plot,'k','filled','MarkerFaceAlpha',0.05,'MarkerEdgeAlpha',0.1)
+            s = swarmchart(x,results_to_plot,'k','filled','MarkerFaceAlpha',0.05,'MarkerEdgeAlpha',0.1);
         end
-        
+        s(1).XJitterWidth = 0.025*length(cond_names); s(2).XJitterWidth = 0.025*length(cond_names);
+        s(3).XJitterWidth = 0.025*length(cond_names); s(4).XJitterWidth = 0.025*length(cond_names);
+
         xticklabels(cond_names)
 %         boxplot(roi_results,'Labels',conds);
 
         title(roi_names{roi_idx});
         ylabel(ylabel_); ylim(ylims_)
         set(gca,'box','off','Fontsize',fontsize)
+        
+        if contains(quantity_name,'DI')
+            yline(0.5,'--k','LineWidth',1);
+        elseif contains(quantity_name,'SAP')
+            yline(6/27*100,'--k','LineWidth',1);
+        end
 
         
         if save_results
-            fig_name = sprintf('%s_%s_%d_roi_%s',img_type,quantity_name,roi_idx,roi_fnames{roi_idx});
+            roi_str = sprintf('_%d_roi_%s',roi_idx,roi_fnames{roi_idx});
+            if isempty(roi_fnames{roi_idx})
+                roi_str = '';
+            end
+            
+            fig_name = sprintf('%s_%s%s',img_type,quantity_name,roi_str); % roi_idx,roi_fnames{roi_idx});
             saveas(gcf,fullfile(results_folder,strcat(fig_name,'.tif')));
             saveas(gcf,fullfile(results_folder,strcat(fig_name,'.fig')));
 
             if close_figs; close(gcf); end
 
-            file_name = sprintf('%s_%s_%d_roi_%s_results',img_type,quantity_name,roi_idx,roi_fnames{roi_idx});
+            file_name = sprintf('%s_%s%s_results',img_type,quantity_name,roi_str); % roi_idx,roi_fnames{roi_idx});
             save(fullfile(stats_folder,strcat(file_name,'.mat')),'roi_results');
         end
         

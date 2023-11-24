@@ -5,7 +5,7 @@ function [] = make_one_summary_file(summary_folder)
     %%
     all_img_types = {'moc23','12f4','ct695','iba1','gfap','cfos','ki67','dcx','sox2'};
     
-    cohort_subfolder = 'Cohorts_2-5_6mo';
+    cohort_subfolder = 'Cohorts_2-6_6mo';
     fname_1 = fullfile(summary_folder,cohort_subfolder,'IHC_density_results.xlsx');
     fname_2 = fullfile(summary_folder,cohort_subfolder,'IHC_count_results.xlsx');
     fname_3 = fullfile(summary_folder,cohort_subfolder,'IHC_ratio_results.xlsx');
