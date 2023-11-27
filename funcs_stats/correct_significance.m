@@ -1,14 +1,6 @@
 function [h_cor,p_cor] = correct_significance(p,method,idxs) % half_n)
     % @author: pdzialecka
 
-%     if ~exist('bc','var') % Bonferroni correction
-%         bc = 1;
-%     end
-%     
-%     if ~exist('bc_h','var') % Bonferroni-Holm correction 
-%         bc_h = 1;
-%     end
-    
     if ~exist('method','var')
         method = 'bc-h';
     end
@@ -16,11 +8,8 @@ function [h_cor,p_cor] = correct_significance(p,method,idxs) % half_n)
     if ~exist('idxs','var')
         idxs = [];
     end
-    
-%     if ~exist('half_n','var')
-%         half_n = 0;
-%     end
 
+    %%
     if ~isempty(idxs)
         sine_idxs = idxs{1};
         square_idxs = idxs{2};
@@ -34,8 +23,10 @@ function [h_cor,p_cor] = correct_significance(p,method,idxs) % half_n)
 
     n = length(p(~isnan(p))); % length(p);
     threshs = [0.05,0.01,0.001];
+    mc_thresh = threshs(1);
     p_cor = nan(n,1);
     
+    %%
     % bonferroni correct p value
     if strcmp(method,'bc') % bc
         if half_n
@@ -58,19 +49,22 @@ function [h_cor,p_cor] = correct_significance(p,method,idxs) % half_n)
     
     p_cor = p_cor';
     
-    if all(isnan(p_cor)) % no correction; find significance still
+    if all(isnan(p_cor)) % no correction case (simply find significance)
         p_cor = p;
     end
     
+    %%
     for i = 1:length(p_cor)
-        p_i = p_cor(i); % p_cor or p
+%         p_i = p_cor(i); % simple: use corrected p values
+        p_i = p(i); % use original p values + check corrected below mc_thresh
+        p_c_i = p_cor(i);
         stars = [];
         
-        if p_i < threshs(3)
+        if p_i < threshs(3) && p_c_i < mc_thresh % added && p_c_i < mc_thresh
             stars = '***';
-        elseif p_i < threshs(2)
+        elseif p_i < threshs(2) && p_c_i < mc_thresh
             stars = '**';
-        elseif p_i < threshs(1)
+        elseif p_i < threshs(1) && p_c_i < mc_thresh
             stars = '*';
         end
         
@@ -80,4 +74,5 @@ function [h_cor,p_cor] = correct_significance(p,method,idxs) % half_n)
     if any(isnan(p))
         h_cor{isnan(p)} = nan;
     end
+    
 end

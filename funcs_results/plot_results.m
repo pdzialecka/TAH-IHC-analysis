@@ -136,10 +136,10 @@ function [results_all] = plot_results(quantity_to_plot,quantity_name,...
         
         if iscell(quantity_to_plot)
             roi_results_ = {};
-            roi_results_{1} = [sham_results{roi_idx,:}]*2; % for diameter
-            roi_results_{2} = [ltd_results{roi_idx,:}]*2;
-            roi_results_{3} = [theta_results{roi_idx,:}]*2;
-            roi_results_{4} = [gamma_results{roi_idx,:}]*2;
+            roi_results_{1} = [sham_results{roi_idx,:}];
+            roi_results_{2} = [ltd_results{roi_idx,:}];
+            roi_results_{3} = [theta_results{roi_idx,:}];
+            roi_results_{4} = [gamma_results{roi_idx,:}];
 
 
             max_n = max(cellfun(@length,roi_results_));
@@ -222,8 +222,8 @@ function [results_all] = plot_results(quantity_to_plot,quantity_name,...
             cond_names,'RowNames',row_names);
         
         % add mean and std
-        extra_T = array2table([mean(roi_results,'omitnan');std(roi_results,'omitnan')],...
-            'VariableNames',cond_names,'RowNames',{'Mean','Std'});
+        extra_T = array2table([mean(roi_results,'omitnan');std(roi_results,'omitnan');sum(~isnan(roi_results))],...
+            'VariableNames',cond_names,'RowNames',{'Mean','Std','n'});
         roi_results_T = [roi_results_T; extra_T];
         
         if save_results

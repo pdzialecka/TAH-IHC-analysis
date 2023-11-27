@@ -212,8 +212,9 @@ function [] = summarise_results(base_folder,cohort_case,img_type,...
     roi_density = nan(roi_no,mouse_no);
     roi_count = nan(roi_no,mouse_no);
     roi_cfos_ratio = nan(roi_no,mouse_no);
-    roi_size = cell(roi_no,mouse_no);
-    roi_size(:) = {NaN};
+    roi_size_all = cell(roi_no,mouse_no);
+    roi_size_all(:) = {NaN};
+    roi_size = nan(roi_no,mouse_no);
 
     for roi_idx = roi_idxs % 1:roi_no
         roi_fname = roi_fnames{roi_idx};
@@ -232,7 +233,8 @@ function [] = summarise_results(base_folder,cohort_case,img_type,...
             end
             
             if check_size
-                roi_size{roi_idx,i} = results{roi_idx,i}.particle_radii;
+                roi_size_all{roi_idx,i} = results{roi_idx,i}.particle_radii*2;
+                roi_size(roi_idx,i) = mean(results{roi_idx,i}.particle_radii*2,'omitnan'); % *2 for a diameter
             end
         end
     end
@@ -244,7 +246,7 @@ function [] = summarise_results(base_folder,cohort_case,img_type,...
         roi_density(:,exclude_idxs) = nan;
         roi_count(:,exclude_idxs) = nan;
         roi_cfos_ratio(:,exclude_idxs) = nan;
-        roi_size(:,exclude_idxs) = {nan};
+        roi_size_all(:,exclude_idxs) = {nan};
     end
     
     %% Results summary: density

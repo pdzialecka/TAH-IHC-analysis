@@ -14,10 +14,10 @@ function [p,h,stats_T] = compute_stats(quantity_to_plot_all,quantity_name,img_ty
     end
     
 %     var_names = {'Delta vs Sham','Theta vs Sham','Gamma vs Sham'};
-    var_names = {'Delta vs Sham p','Theta vs Sham p','Gamma vs Sham p',...
+    var_names = {'Test',...
+                 'Delta vs Sham p','Theta vs Sham p','Gamma vs Sham p',...
                  'Delta vs Sham p_c','Theta vs Sham p_c','Gamma vs Sham p_c',...
-                 'Delta vs Sham h','Theta vs Sham h','Gamma vs Sham h',...
-                 'Test'};
+                 'Delta vs Sham h','Theta vs Sham h','Gamma vs Sham h'};
              
     mc_method = 'bc-h';
     
@@ -73,7 +73,7 @@ function [p,h,stats_T] = compute_stats(quantity_to_plot_all,quantity_name,img_ty
         save(fullfile(stats_folder,strcat(file_name,'.mat')),'p','p_c','h','tests');
 
 %         stats_T = array2table(p,'VariableNames',var_names,'RowNames',roi_names(roi_idxs));
-        stats_T = array2table([num2cell(p),num2cell(p_c),h,tests],'VariableNames',var_names,'RowNames',roi_names(roi_idxs));
+        stats_T = array2table([tests,num2cell(p),num2cell(p_c),h],'VariableNames',var_names,'RowNames',roi_names(roi_idxs));
         table_name = fullfile(stats_folder,strcat(file_name,'.xlsx'));
         writetable(stats_T,table_name,'WriteRowNames',true);
     end
