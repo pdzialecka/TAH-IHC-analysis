@@ -21,7 +21,7 @@ function [pixel_thresh,min_size,max_size,do_watershed,correct_brightness] = get_
         do_watershed = 0;
         
     elseif strcmp(antibody_type,'ct695')
-        pixel_thresh = 0.7;
+        pixel_thresh = 0.6; % 0.7; % added
         min_size = 1;
         max_size = 15;
         do_watershed = 0;
@@ -43,6 +43,7 @@ function [pixel_thresh,min_size,max_size,do_watershed,correct_brightness] = get_
         min_size = 4;
         max_size = 30;
         do_watershed = 1;
+        correct_brightness = 0; % added
 
     elseif strcmp(antibody_type,'ki67')
         pixel_thresh = 0.6; % 0.8 with brightness correction

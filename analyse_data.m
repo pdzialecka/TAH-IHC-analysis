@@ -151,24 +151,43 @@ function [] = analyse_data(files,load_rois,close_figs)
 %                 normalise_brightness = 1;
 %             end
             
-            if correct_brightness
+            if correct_brightness % histogram matching to reference images
                 h_image_roi = imhistmatch(h_image_roi,h_image_ref);
-    %             if ~contains(fname,'cfos')
                 dab_image_roi = imhistmatch(dab_image_roi,dab_image_ref);
-    %             end
 
-                roi_b_img_folder = fullfile(fileparts(fileparts(folder)),'ROI_images_norm',mouse_name);
-                if ~exist(roi_b_img_folder,'dir')
-                    mkdir(roi_b_img_folder);
-                end
-    
-%                 roi_image = cat(2,h_image_roi,dab_image_roi);
-                img_fname = fullfile(roi_b_img_folder,strcat(fname,'.tif'));
-
-                imwrite(h_image_roi,img_fname,'Compression','none','WriteMode','overwrite');
-                imwrite(dab_image_roi,img_fname,'Compression','none','WriteMode','append');
+%                 roi_b_img_folder = fullfile(fileparts(fileparts(folder)),'ROI_images_norm',mouse_name);
+%                 if ~exist(roi_b_img_folder,'dir')
+%                     mkdir(roi_b_img_folder);
+%                 end
+%     
+% %                 roi_image = cat(2,h_image_roi,dab_image_roi);
+%                 img_fname = fullfile(roi_b_img_folder,strcat(fname,'.tif'));
+% 
+%                 imwrite(h_image_roi,img_fname,'Compression','none','WriteMode','overwrite');
+%                 imwrite(dab_image_roi,img_fname,'Compression','none','WriteMode','append');
                
+            else % alternative approach: subtract mean bkg to normalise extreme imgs (ki67 & cfos)
+                h_diff = mean(h_image_roi,[1,2])-mean(h_image_ref,[1,2]);
+                dab_diff = mean(dab_image_roi,[1,2])-mean(dab_image_ref,[1,2]);
+%                 [mean(h_image_roi,[1,2]),mean(h_image_ref,[1,2])]
+%                 [mean(dab_image_roi,[1,2]),mean(dab_image_ref,[1,2])]
+                
+                h_image_roi = h_image_roi - h_diff;
+                dab_image_roi = dab_image_roi-dab_diff;
+%                 [mean(h_image_roi,[1,2]),mean(h_image_ref,[1,2])]
+%                 [mean(dab_image_roi,[1,2]),mean(dab_image_ref,[1,2])]
+
             end
+            
+            roi_b_img_folder = fullfile(fileparts(fileparts(folder)),'ROI_images_norm',mouse_name);
+            if ~exist(roi_b_img_folder,'dir')
+                mkdir(roi_b_img_folder);
+            end
+
+            img_fname = fullfile(roi_b_img_folder,strcat(fname,'.tif'));
+
+            imwrite(h_image_roi,img_fname,'Compression','none','WriteMode','overwrite');
+            imwrite(dab_image_roi,img_fname,'Compression','none','WriteMode','append');
             
             %% Find slice mask for ROI
             roi_x = rois_x{roi_idx};
@@ -292,7 +311,7 @@ function [] = analyse_data(files,load_rois,close_figs)
                 h_cell_mask_2 = imfilter(h_cell_mask,kernel);
 %                 figure,imshow(h_cell_mask_2)
                 
-                % remove small components
+                % remove small components from h mask
                 min_d = 3;
                 min_con_pixels = round((pi*((min_d/2)/pixel_size)^2));
                 h_cell_mask_f = bwareaopen(h_cell_mask_2,min_con_pixels,8);
@@ -516,7 +535,8 @@ function [] = analyse_data(files,load_rois,close_figs)
 %             artefact_idxs = [];
             if strcmp(img_type,'ki67')
                 max_eccentricity = 1; % 0.9
-                artefact_idxs = find([particles_found.Eccentricity]>max_eccentricity);
+%                 artefact_idxs = find([particles_found.Eccentricity]>max_eccentricity);
+                artefact_idxs = [];
             else
                 max_eccentricity = 1;
                 artefact_idxs = [];

@@ -32,8 +32,11 @@ function [results_all] = plot_results(quantity_to_plot,quantity_name,...
     %%
     % IHC
     if strcmp(quantity_name,'density')
-        ylabel_ = 'Area covered (%)';
+        ylabel_ = 'Area (%)'; %'Area covered (%)';
         y_round = 0.5;
+        if strcmp(img_type,'sox2')
+            y_round = 1;
+        end
     elseif strcmp(quantity_name,'count')
         ylabel_ = 'Cell count';
         y_round = 10;

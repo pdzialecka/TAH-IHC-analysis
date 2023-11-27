@@ -95,9 +95,9 @@ function [] = summarise_results(base_folder,cohort_case,img_type,...
     
     %% Find mouse names per condition
     sham_names = mouse_names(mouse_cond_idxs==1)';
-    gamma_names = mouse_names(mouse_cond_idxs==2)';
-    theta_names = mouse_names(mouse_cond_idxs==3)';
     ltd_names = mouse_names(mouse_cond_idxs==4)';
+    theta_names = mouse_names(mouse_cond_idxs==3)';
+    gamma_names = mouse_names(mouse_cond_idxs==2)';
     condition_mouse_names = {sham_names,ltd_names,theta_names,gamma_names};
 
     %% Find result files
@@ -289,8 +289,9 @@ function [] = summarise_results(base_folder,cohort_case,img_type,...
     end
     
     %% Plot DAB images for comparison
-    if 0
+    if 1
     [~,~,~,~,correct_brightness] = get_antibody_threshold(img_type);
+    correct_brightness = 1;
     
     for roi_idx = roi_idxs
         

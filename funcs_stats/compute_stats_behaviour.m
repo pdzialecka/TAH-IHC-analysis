@@ -67,10 +67,10 @@ function [p,hh] = compute_stats_behaviour(quantity_to_plot_all,quantity_name,img
     
     if ~isnan(chance_level)
         if all(~hn)
-            [hh(roi_idx,:),p(roi_idx,:)] = ttest(roi_results,chance_level);
+            [hh(roi_idx,:),p(roi_idx,:)] = ttest(roi_results,chance_level,'Tail','right');
             test2 = 'ttest';
         else
-            [p(roi_idx,:),hh(roi_idx,:)] = signrank_matrix(roi_results,chance_level);
+            [p(roi_idx,:),hh(roi_idx,:)] = signrank_matrix(roi_results,chance_level,'right');
             test2 = 'signrank';
         end
         

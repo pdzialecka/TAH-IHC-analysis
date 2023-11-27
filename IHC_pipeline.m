@@ -16,16 +16,17 @@ base_folder = 'D:\TAH';
 %% Analysis steps
 deconvolve = 0;
 select_rois = 0;
-create_mask = 0;
+create_mask = 1;
 analyse = 0;
-analyse_all = 0;
-summarise = 1;
-summarise_tables = 1;
+analyse_all = 1;
+summarise = 0;
+summarise_tables = 0;
 
 %% Analysis settings
 % magnification = 20;
 % roi_size_um = [500,500]; % 500 x 500 um
 all_img_types = {'moc23','12f4','ct695','iba1','gfap','cfos','ki67','dcx','sox2'};
+all_img_types = {'moc23','iba1','gfap'};
 img_type = 'moc23'; % specific analysis
 
 %% Cohort case
@@ -35,7 +36,7 @@ if cohort_case == 1
     cohort_folders = {'Cohort_1'};
     
 elseif cohort_case == 2
-    cohort_folders = {'Cohort_2','Cohort_3','Cohort_4','Cohort_5'};
+    cohort_folders = {'Cohort_2','Cohort_3','Cohort_4','Cohort_5','Cohort_6'};
 end
 
 %% Within animal analysis inside cohort folders
@@ -125,7 +126,7 @@ if summarise
     if analyse_all
         for i = 1:length(all_img_types)
             img_type_i = all_img_types{i};
-            summarise_results(base_folder,cohort_case,img_type_i);
+            summarise_results(base_folder,cohort_case,img_type_i,mice_to_exclude);
         end
 
     else
