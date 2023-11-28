@@ -16,7 +16,7 @@ addpath(genpath(analysis_folder));
 
 %% Define root folders
 root_data_folder = 'D:\TAH\Behaviour_results\from_Maria\Results\';
-root_results_folder = 'D:\TAH\Behaviour_results\Cohorts_2-5_6mo';
+root_results_folder = 'D:\TAH\Behaviour_results\Cohorts_2-6_6mo';
 
 %% Settings
 % cond_names = {'Sham','Delta','Theta','Gamma'};
@@ -24,6 +24,8 @@ root_results_folder = 'D:\TAH\Behaviour_results\Cohorts_2-5_6mo';
 save_results = 1;
 roi_idxs = 1;
 img_type = 'Behaviour';
+
+mice_to_exclude = {'AD-Hipp53'}; % WT
 
 %% Load cohort info
 % cohort_idxs = 2:5;
@@ -60,6 +62,8 @@ mouse_cond_idxs(treatment_groups == 'LTD') = 4;
 mouse_cond_idxs(treatment_groups == '8 Hz') = 3;
 mouse_cond_idxs(treatment_groups == '40 Hz') = 2;
 
+exclude_idx = find(strcmp(mice_to_exclude,dataset_OLM_data.Animal_ID));
+
 %% Specify results folders
 results_folder = fullfile(root_results_folder,'OLM');
 if ~exist(results_folder)
@@ -72,6 +76,10 @@ stats_folder = fullfile(results_folder,'Stats');
 Training_expTime = dataset_OLM_data.Total_expTime_training';
 Training_DI = dataset_OLM_data.Training_DI';
 Test_DI = dataset_OLM_data.Test_DI';
+
+Training_expTime(exclude_idx) = nan;
+Training_DI(exclude_idx) = nan;
+Test_DI(exclude_idx) = nan;
 
 %% Exploration time
 [results_expTime] = plot_results(Training_expTime,'expTime',mouse_cond_idxs,...
@@ -111,6 +119,10 @@ stats_folder = fullfile(results_folder,'Stats');
 SAP_index = [YMaze_data.SAP_index];
 AAR_index = [YMaze_data.AAR_index];
 SAR_index = [YMaze_data.SAR_index];
+
+SAP_index(exclude_idx) = nan;
+AAR_index(exclude_idx) = nan;
+SAR_index(exclude_idx) = nan;
 
 %% SAP index
 [results_SAP_idx] = plot_results(SAP_index,'SAP_index',mouse_cond_idxs,...

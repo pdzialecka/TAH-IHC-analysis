@@ -17,17 +17,16 @@ base_folder = 'D:\TAH';
 deconvolve = 0;
 select_rois = 0;
 create_mask = 1;
-analyse = 0;
+analyse = 1;
 analyse_all = 1;
-summarise = 0;
-summarise_tables = 0;
+summarise = 1;
+summarise_tables = 1;
 
 %% Analysis settings
 % magnification = 20;
 % roi_size_um = [500,500]; % 500 x 500 um
 all_img_types = {'moc23','12f4','ct695','iba1','gfap','cfos','ki67','dcx','sox2'};
-all_img_types = {'moc23','iba1','gfap'};
-img_type = 'moc23'; % specific analysis
+img_type = 'gfap'; % specific analysis
 
 %% Cohort case
 cohort_case = 2; % 1 = 13mo (cohort 1), 2 = 6mo (cohorts 2-5)

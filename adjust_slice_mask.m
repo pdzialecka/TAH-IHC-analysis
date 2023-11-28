@@ -14,7 +14,7 @@ addpath(genpath(analysis_folder));
 file_path = 'D:\TAH\Data\Cohort_4\IHC\ROI_images\AD-Hipp42\AD-Hipp42_gfap_5_roi_hipp_CA3_L.tif';
 
 %% Specify number of areas to remove
-area_no = 1;
+area_no = 2;
 
 %% Find all directories
 [roi_img_folder,roi_fname] = fileparts(file_path);
