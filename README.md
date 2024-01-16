@@ -1,7 +1,7 @@
 # Analysis pipeline for TAH project
-Automated analysis of large brightifeld IHC images. Additional IF pipeline + behaviour results extraction included
+Automated analysis of large brightifeld IHC images. Additional IF pipeline + behaviour results extraction included.
 
-# Software equirements
+# Software requirements
 * Matlab (tested with version 2021a)
 * Matlab Toolboxes: Image Processing, Statistics and Machine Learning
 * Fiji
@@ -33,9 +33,9 @@ To define the threshold the antibody labelling has to pass to be counted, go to 
 FILE & FOLDER NAMES ARE IMPORTANT!
 
 Folder structure
-* Data is stored under 'xxx\IHC\Images\Mouse_name'
-* Deconvolved images are saved inside 'xxx\IHC\Images\Mouse_name\Processed'
-* Selected ROIs are saved inside 'xxx\IHC\ROIs\Mouse_name'
-* Results are saved inside 'xxx\IHC\Results\Mouse_name'
+* Data is stored under 'xxx\IHC\Images\Subject_name'
+* Deconvolved images are saved inside 'xxx\IHC\Images\Subject_name\Processed'
+* Selected ROIs are saved inside 'xxx\IHC\ROIs\Subject_name'
+* Results are saved inside 'xxx\IHC\Results\Subject_name'
 
-Expected file names: mouse_name-antibody_name, e.g. AD-Hipp28_moc23.svs
+Expected file names: subject_name-antibody_name, e.g. AD-Hipp28_moc23.svs
