@@ -246,6 +246,7 @@ function [] = summarise_results(base_folder,cohort_case,img_type,...
         roi_density(:,exclude_idxs) = nan;
         roi_count(:,exclude_idxs) = nan;
         roi_cfos_ratio(:,exclude_idxs) = nan;
+        roi_size(:,exclude_idxs) = nan;
         roi_size_all(:,exclude_idxs) = {nan};
     end
     
@@ -340,17 +341,6 @@ function [] = summarise_results(base_folder,cohort_case,img_type,...
                 colormap(dab_colormap)
                 title(roi_img_files(cond_img_idxs(i)).name,'Interpreter','none')
                 
-                % dab images + antibody masks
-                dab_roi_mask = load(fullfile(roi_mask_files(cond_img_idxs(i)).folder,roi_mask_files(cond_img_idxs(i)).name)).dab_roi_mask;
-                roi_img_dab_mask = labeloverlay(roi_img_dab,dab_roi_mask,...
-                    'Colormap',[0,0,1],'Transparency',0.2);
-                
-                set(0,'CurrentFigure',fig2)
-                subplot(round(max_n/2),2,i),imshow(roi_img_dab_mask)
-                title_txt = {roi_mask_files(cond_img_idxs(i)).name,...
-                    sprintf('Cell count = %d; Density = %1.2f %%',roi_results_count_j(i),roi_results_density_j(i))};
-                title(title_txt,'Interpreter','none')
-                
                  % norm dab images
                 if correct_brightness
                     [~,roi_img_norm_dab] = load_deconvolved_images(fullfile(roi_img_norm_files(cond_img_idxs(i)).folder,roi_img_norm_files(cond_img_idxs(i)).name));
@@ -359,6 +349,23 @@ function [] = summarise_results(base_folder,cohort_case,img_type,...
                     colormap(dab_colormap)
                     title(roi_img_norm_files(cond_img_idxs(i)).name,'Interpreter','none')
                 end
+
+                % dab images + antibody masks
+                dab_roi_mask = load(fullfile(roi_mask_files(cond_img_idxs(i)).folder,roi_mask_files(cond_img_idxs(i)).name)).dab_roi_mask;
+                if correct_brightness
+                    roi_img_dab_mask = labeloverlay(roi_img_norm_dab,dab_roi_mask,...
+                            'Colormap',[0,0,1],'Transparency',0.2);
+                else
+                    roi_img_dab_mask = labeloverlay(roi_img_dab,dab_roi_mask,...
+                        'Colormap',[0,0,1],'Transparency',0.2);
+                end
+                
+                set(0,'CurrentFigure',fig2)
+                subplot(round(max_n/2),2,i),imshow(roi_img_dab_mask)
+                title_txt = {roi_mask_files(cond_img_idxs(i)).name,...
+                    sprintf('Cell count = %d; Density = %1.2f %%',roi_results_count_j(i),roi_results_density_j(i))};
+                title(title_txt,'Interpreter','none')
+                
             end
             
             fig_1_name = sprintf('roi_images_%s_%d_%s_%d_%s.tif',img_type,roi_idx,roi_fnames{roi_idx},j,cond_names{j});

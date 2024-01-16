@@ -73,7 +73,7 @@ end
 stats_folder = fullfile(results_folder,'Stats');
 
 %% Extract data
-Training_expTime = dataset_OLM_data.Total_expTime_training';
+Training_expTime = dataset_OLM_data.Total_expTime_test'; % Total_expTime_training';
 Training_DI = dataset_OLM_data.Training_DI';
 Test_DI = dataset_OLM_data.Test_DI';
 
