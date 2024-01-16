@@ -24,8 +24,6 @@ summarise_all = 0;
 summarise_tables = 1;
 
 %% Analysis settings
-% magnification = 20;
-% roi_size_um = [500,500]; % 500 x 500 um
 all_img_types = {'moc23','12f4','ct695','iba1','gfap','cfos','ki67','dcx','sox2'};
 img_type = 'iba1'; % specific analysis
 
@@ -53,9 +51,6 @@ for cohort_idx = 1:length(cohort_folders)
         %% Deconvolve all files inside a folder
         if deconvolve
             files = dir(fullfile(data_folder,'*','*.svs'));
-%             if cohort_idx == 3
-%                 files = files(19:end);
-%             end
             deconvolve_full(files);
 
             cd(analysis_folder);
@@ -101,10 +96,8 @@ for cohort_idx = 1:length(cohort_folders)
 
             if analyse_all
                 files = dir(fullfile(processed_folder,'*',strcat('*deconv.tif')));
-%                 files = dir(fullfile(roi_images_folder,'**','*.tif'));
             else
                 files = dir(fullfile(processed_folder,'*',strcat('*',img_type,'*deconv.tif')));
-%                 files = dir(fullfile(roi_images_folder,'**',strcat('*',image_type,'*.tif')));
             end
 
 %             files = files(1); % test file

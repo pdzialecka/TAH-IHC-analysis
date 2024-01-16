@@ -12,7 +12,6 @@ addpath(genpath(analysis_folder));
 
 %% Root data folder
 base_folder = 'C:\Users\Pat\Desktop\TAH';
-% base_folder = 'K:\TAH';
 
 %% Analysis steps
 analyse = 1;
