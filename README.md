@@ -1,5 +1,5 @@
 # Analysis pipeline for TAH project
-Automated analysis of large brightfield IHC images, with manual curation of ROI selection & artefact removal. Additional IF pipeline + behaviour results extraction included.
+Semi-automated analysis of large brightfield IHC images (**IHC_pipeline.m**), with manual curation of ROI selection & artefact removal. Additional IF pipeline (**IF_pipeline.m**) + behaviour results extraction (**BEHAVIOUR_results.m**) included.
 
 # Software requirements
 * Matlab (tested with version 2021a)
