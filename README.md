@@ -5,11 +5,13 @@ Semi-automated analysis of large brightfield IHC images (**IHC_pipeline.m**), wi
 * Matlab (tested with version 2021a)
 * Matlab Toolboxes: Image Processing, Statistics and Machine Learning
 * Fiji
+* [MIJ](https://www.mathworks.com/matlabcentral/fileexchange/47545-mij-running-imagej-and-fiji-within-matlab) (add to Libraries folder)
+* [CopyToImagePlus](https://github.com/kouichi-c-nakamura/copytoImagePlus) package (add to Libraries folder)
 
 # Setup instructions
 1) FIJI-Matlab communication  
 a) Install Fiji if you don't have it already, e.g. on Desktop ('C:\Users\Pat\Desktop\Fiji.app')  
-b) Copy mij.jar file from Libraries folder into your Matlab java folder, e.g. 'C:\Program Files\MATLAB\R2021a\java\jar\mij.jar'  
+b) Copy mij.jar file from MIJ folder in Libraries folder into your Matlab java folder, e.g. 'C:\Program Files\MATLAB\R2021a\java\jar\mij.jar'  
 c) In utils/setup_miji(): change directory folders to match your configuration. This ensures Matlab can use java to control Fiji
    e.g. Matlab folder from step b: 'C:\Program Files\MATLAB\R2021a\java\jar\mij.jar'
    Fiji installation from step a: 'C:\Users\Pat\Desktop\Fiji.app\jars\ij-1.53q.jar';'C:\Users\Pat\Desktop\Fiji.app\scripts'  
